@@ -1,3 +1,7 @@
 <resources>
     <string name="app_name">SMS Sender</string>
+    <string name="phone_no_placeholder">Enter phone number</string>
+    <string name="message_no_placeholder">Enter message</string>
+    <string name="add_message">Add Message</string>
+    <string name="choose_date_and_time">Choose Date and Time</string>
 </resources>
