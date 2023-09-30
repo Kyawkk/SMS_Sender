@@ -18,11 +18,12 @@ import com.kyawzinlinn.smssender.utils.KEY_PHONE_NUMBER
 import com.kyawzinlinn.smssender.utils.SmsUtils
 import com.kyawzinlinn.smssender.utils.toLocalDateTime
 import com.kyawzinlinn.smssender.worker.SmsSenderWorker
+import com.kyawzinlinn.smssender.worker.makeSmsSentNotification
 import java.time.LocalDateTime
 import java.time.ZoneOffset
 import java.util.concurrent.TimeUnit
 
-class WorkerSmsRepository(context: Context) : SmsRepository {
+class WorkerSmsRepository(private val context: Context) : SmsRepository {
     val workManager = WorkManager.getInstance(context)
     val isPermissionGranted = false
     override fun requestSmsPermission(activity: Activity) {
@@ -63,5 +64,9 @@ class WorkerSmsRepository(context: Context) : SmsRepository {
                 message.message + message.delayTime, ExistingWorkPolicy.REPLACE, oneTimeWorkRequest
             )
         }
+    }
+
+    override fun cancelSms(workerId: String) {
+        workManager.cancelUniqueWork(workerId)
     }
 }

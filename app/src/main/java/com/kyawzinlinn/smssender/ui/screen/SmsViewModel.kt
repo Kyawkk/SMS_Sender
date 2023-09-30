@@ -37,6 +37,10 @@ class SmsViewModel(
         repository.sendSms(message)
     }
 
+    fun cancelSmsWorker(message: MessageDTO){
+        repository.cancelSms(message.message + message.delayTime)
+    }
+
     fun getAllMessages() {
         _uiState.update {
             it.copy(
@@ -52,15 +56,4 @@ class SmsViewModel(
     data class SmsUiState(
         val messages: Flow<List<MessageDTO>> = emptyFlow()
     )
-
-    companion object{
-        val Factory: ViewModelProvider.Factory = viewModelFactory {
-            initializer {
-                val repository = (this[APPLICATION_KEY] as SmsSenderApplication).container.repository
-                val messageRepository = (this[APPLICATION_KEY] as SmsSenderApplication).container.messageDatabaseRepository
-
-                SmsViewModel(repository,messageRepository)
-            }
-        }
-    }
 }
