@@ -287,6 +287,7 @@ fun TimePickerDialog(
             calendar.set(Calendar.MINUTE, timePickerState.minute)
             calendar.time
         }
+
         val formattedTime = remember {
             SimpleDateFormat("hh:mm a", Locale.getDefault()).format(selectedTime)
         }
