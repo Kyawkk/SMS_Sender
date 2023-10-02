@@ -37,6 +37,13 @@ class SmsViewModel(
         repository.sendSms(message)
     }
 
+    fun deleteMessage(message: MessageDTO){
+        cancelSmsWorker(message)
+        viewModelScope.launch {
+            messageRepository.deleteMessage(message)
+        }
+    }
+
     fun cancelSmsWorker(message: MessageDTO){
         repository.cancelSms(message.message + message.delayTime)
     }

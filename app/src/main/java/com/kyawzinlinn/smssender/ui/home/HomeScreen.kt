@@ -9,6 +9,7 @@ import android.Manifest
 import androidx.compose.animation.animateContentSize
 import androidx.compose.foundation.ExperimentalFoundationApi
 import androidx.compose.foundation.background
+import androidx.compose.foundation.clickable
 import androidx.compose.foundation.combinedClickable
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
@@ -29,6 +30,7 @@ import androidx.compose.foundation.lazy.itemsIndexed
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Add
+import androidx.compose.material.icons.filled.Delete
 import androidx.compose.material.icons.filled.KeyboardArrowDown
 import androidx.compose.material.icons.filled.KeyboardArrowUp
 import androidx.compose.material3.Button
@@ -51,6 +53,7 @@ import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
 import androidx.lifecycle.viewmodel.compose.viewModel
@@ -103,9 +106,12 @@ fun HomeScreen(
                 MessageContentList(messages = messages, onMessageItemClicked = {
 
                 }, toggleSmsSenderWork = { isActive, message ->
-                    if(isActive) viewModel.sendSms(message.toMessage())
+                    if (isActive) viewModel.sendSms(message.toMessage())
                     else viewModel.cancelSmsWorker(message)
-                })
+                },
+                    onDeleteItemClick = {
+                        viewModel.deleteMessage(it)
+                    })
             } else {
                 Button(
                     onClick = {
@@ -127,7 +133,8 @@ private fun MessageContentList(
     messages: List<MessageDTO>,
     onMessageItemClicked: (MessageDTO) -> Unit,
     modifier: Modifier = Modifier,
-    toggleSmsSenderWork: (Boolean, MessageDTO) -> Unit
+    toggleSmsSenderWork: (Boolean, MessageDTO) -> Unit,
+    onDeleteItemClick: (MessageDTO) -> Unit
 ) {
     LazyColumn(
         modifier = modifier,
@@ -139,7 +146,8 @@ private fun MessageContentList(
                 messageDTO = message,
                 onItemClicked = onMessageItemClicked,
                 modifier = Modifier.animateItemPlacement(),
-                toggleSmsSenderWork = toggleSmsSenderWork
+                toggleSmsSenderWork = toggleSmsSenderWork,
+                onDeleteItemClick = onDeleteItemClick
             )
         }
     }
@@ -150,17 +158,19 @@ private fun MessageListItem(
     messageDTO: MessageDTO,
     onItemClicked: (MessageDTO) -> Unit,
     modifier: Modifier = Modifier,
-    toggleSmsSenderWork: (Boolean, MessageDTO) -> Unit
+    toggleSmsSenderWork: (Boolean, MessageDTO) -> Unit,
+    onDeleteItemClick: (MessageDTO) -> Unit
 ) {
     var isActive by remember { mutableStateOf(true) }
     var isExpanded by remember { mutableStateOf(false) }
 
     Card(
         modifier = modifier,
-        onClick = {onItemClicked(messageDTO)},
-        shape = MaterialTheme.shapes.large) {
-        Column (
-            modifier = Modifier.animateContentSize ()
+        onClick = { onItemClicked(messageDTO) },
+        shape = MaterialTheme.shapes.large
+    ) {
+        Column(
+            modifier = Modifier.animateContentSize()
         ) {
             Row(
                 modifier = Modifier
@@ -206,6 +216,14 @@ private fun MessageListItem(
 
             if (isExpanded) {
                 SelectDaysLayout()
+                ActionListItem(
+                    Icons.Default.Delete,
+                    "Delete",
+                    action = {
+                        isExpanded = false
+                        onDeleteItemClick(messageDTO)
+                    }
+                )
             }
         }
     }
@@ -220,7 +238,7 @@ fun SelectDaysLayout(
         modifier = modifier
             .fillMaxWidth()
             .padding(vertical = 12.dp),
-        horizontalArrangement = Arrangement.SpaceAround
+        horizontalArrangement = Arrangement.SpaceBetween
     ) {
         items(DataSource.days) {
             DayListItem(day = it, onDayClick = {})
@@ -235,19 +253,41 @@ fun DayListItem(
     modifier: Modifier = Modifier
 ) {
     var isEnabled by remember { mutableStateOf(false) }
-    Card (
+    Card(
         shape = RoundedCornerShape(50),
         modifier = modifier,
         onClick = {
-                  isEnabled = !isEnabled
+            isEnabled = !isEnabled
             onDayClick(isEnabled)
         },
         colors = CardDefaults.cardColors(
             containerColor = if (isEnabled) MaterialTheme.colorScheme.primary else Color.Transparent
         )
     ) {
-        Box(contentAlignment = Alignment.Center){
+        Box(contentAlignment = Alignment.Center) {
             Text(text = day, Modifier.padding(12.dp))
         }
+    }
+}
+
+@Composable
+fun ActionListItem(
+    icon: ImageVector,
+    title: String,
+    action: () -> Unit,
+    modifier: Modifier = Modifier.padding(12.dp)
+) {
+    Row(
+        modifier = modifier
+            .height(48.dp)
+            .fillMaxWidth()
+            .clickable {
+                action()
+            },
+        verticalAlignment = Alignment.CenterVertically
+    ) {
+        Icon(imageVector = icon, contentDescription = null)
+        Spacer(Modifier.width(12.dp))
+        Text(title)
     }
 }

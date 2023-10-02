@@ -11,7 +11,7 @@ android {
 
     defaultConfig {
         applicationId = "com.kyawzinlinn.smssender"
-        minSdk = 24
+        minSdk = 25
         targetSdk = 33
         versionCode = 1
         versionName = "1.0"
@@ -49,6 +49,7 @@ android {
 }
 
 dependencies {
+    implementation(libs.androidx.compose.navigation)
     val work_version = "2.8.1"
     val room_version = "2.5.2"
     val lifecycle_version = "2.6.2"

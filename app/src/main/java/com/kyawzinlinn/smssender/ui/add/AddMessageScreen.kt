@@ -6,11 +6,16 @@
 
 package com.kyawzinlinn.smssender.ui.add
 
-import android.app.TimePickerDialog
 import android.os.Build
 import android.util.Log
-import android.widget.TimePicker
 import androidx.annotation.RequiresApi
+import androidx.compose.animation.AnimatedContent
+import androidx.compose.animation.AnimatedVisibility
+import androidx.compose.animation.animateContentSize
+import androidx.compose.animation.fadeIn
+import androidx.compose.animation.fadeOut
+import androidx.compose.animation.slideInVertically
+import androidx.compose.animation.slideOutVertically
 import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
@@ -28,11 +33,9 @@ import androidx.compose.foundation.text.KeyboardOptions
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Email
 import androidx.compose.material.icons.filled.Phone
-import androidx.compose.material3.AlertDialog
 import androidx.compose.material3.Button
 import androidx.compose.material3.Card
 import androidx.compose.material3.DatePicker
-import androidx.compose.material3.DatePickerDefaults
 import androidx.compose.material3.DatePickerDialog
 import androidx.compose.material3.DatePickerFormatter
 import androidx.compose.material3.ExperimentalMaterial3Api
@@ -44,17 +47,17 @@ import androidx.compose.material3.Text
 import androidx.compose.material3.TextButton
 import androidx.compose.material3.TextField
 import androidx.compose.material3.TimePicker
-import androidx.compose.material3.TimePickerState
 import androidx.compose.material3.rememberDatePickerState
 import androidx.compose.material3.rememberTimePickerState
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
-import androidx.compose.runtime.remember
 import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.input.ImeAction
@@ -72,13 +75,9 @@ import com.kyawzinlinn.smssender.ui.screen.NavigateIconType
 import com.kyawzinlinn.smssender.ui.screen.SmsAppTopBar
 import com.kyawzinlinn.smssender.ui.screen.SmsViewModel
 import com.kyawzinlinn.smssender.utils.toFormattedDateTime
-import com.maxkeppeker.sheets.core.models.base.rememberUseCaseState
-import com.maxkeppeler.sheets.date_time.DateTimeDialog
-import com.maxkeppeler.sheets.date_time.models.DateTimeSelection
+import com.kyawzinlinn.smssender.utils.toFormattedTime
 import java.text.SimpleDateFormat
 import java.time.LocalDateTime
-import java.time.format.FormatStyle
-import java.util.Calendar
 import java.util.Date
 import java.util.Locale
 
@@ -117,57 +116,98 @@ fun MessageInputLayout(
     onAddMessageBtnClick: (MessageDTO) -> Unit, modifier: Modifier = Modifier
 ) {
     var phoneNumber by rememberSaveable { mutableStateOf("") }
+    var isValidPhoneNumber by rememberSaveable { mutableStateOf(true) }
+
     var message by rememberSaveable { mutableStateOf("") }
+    var isValidMessage by rememberSaveable { mutableStateOf(true) }
+
     var selectedDateAndTime by rememberSaveable { mutableStateOf(LocalDateTime.now()) }
     var showDatePickerDialog by rememberSaveable { mutableStateOf(false) }
     var showTimePickerDialog by rememberSaveable { mutableStateOf(false) }
 
+    var selectedDate by rememberSaveable { mutableStateOf("") }
+    var isSelectedDateValid by rememberSaveable { mutableStateOf(true) }
+    var selectedTime by rememberSaveable { mutableStateOf("") }
+    var isSelectedTimeValid by rememberSaveable { mutableStateOf(true) }
+
     Column(
         modifier = modifier
             .padding(horizontal = 8.dp, vertical = 8.dp)
+            .animateContentSize()
             .fillMaxSize(),
         verticalArrangement = Arrangement.spacedBy(8.dp)
     ) {
-        TextField(value = phoneNumber,
+        SmsInputField(
+            value = phoneNumber,
             onValueChange = { phoneNumber = it },
             modifier = Modifier.fillMaxWidth(),
-            leadingIcon = { Icon(imageVector = Icons.Default.Phone, contentDescription = "") },
+            leadingIcon = Icons.Default.Phone,
             keyboardOptions = KeyboardOptions.Default.copy(
                 keyboardType = KeyboardType.Number, imeAction = ImeAction.Next
             ),
-            placeholder = { Text(text = stringResource(id = R.string.phone_no_placeholder)) })
-        TextField(value = message,
+            placeholderId = R.string.phone_no_placeholder,
+            isValid = isValidPhoneNumber,
+            errorMessage = "Please enter valid phone number!"
+        )
+        SmsInputField(
+            value = message,
             onValueChange = { message = it },
-            maxLines = 20,
-            leadingIcon = { Icon(imageVector = Icons.Default.Email, contentDescription = "") },
+            maxLines = 2,
+            leadingIcon = Icons.Default.Email,
             modifier = Modifier.fillMaxWidth(),
             keyboardOptions = KeyboardOptions.Default.copy(
                 keyboardType = KeyboardType.Text
             ),
-            placeholder = { Text(text = stringResource(id = R.string.message_no_placeholder)) })
+            placeholderId = R.string.message_no_placeholder,
+            isValid = isValidMessage,
+            errorMessage = "Message field must not be empty!"
+        )
 
-        DateAndTimeInputLayout(onDateButtonClick = { showDatePickerDialog = true },
-            onTimeButtonClick = { showTimePickerDialog = true })
+        DateAndTimeInputLayout(
+            date = selectedDate,
+            time = selectedTime,
+            isDateValid = isSelectedDateValid,
+            isTimeValid = isSelectedTimeValid,
+            onDateButtonClick = { showDatePickerDialog = true },
+            onTimeButtonClick = { showTimePickerDialog = true }
+        )
 
-        if (showDatePickerDialog) MaterialDatePickerDialog(onDismiss = {
-            showDatePickerDialog = false
-        }, onOkBtnClick = {
-            showDatePickerDialog = false
-        })
-        
+        if (showDatePickerDialog) MaterialDatePickerDialog(
+            onDismiss = {
+                showDatePickerDialog = false
+            }, onOkBtnClick = {
+                selectedDate = it
+                showDatePickerDialog = false
+            }
+        )
+
         if (showTimePickerDialog) TimePickerDialog(
-            onCancel = { /*TODO*/ },
-            onConfirm = { /*TODO*/ }) {
-            TimePicker(state = rememberTimePickerState())
+            onCancel = { showTimePickerDialog = false },
+            onConfirm = {
+                selectedTime = it
+                showTimePickerDialog = false
+            }) {
         }
 
         Button(
             onClick = {
-                onAddMessageBtnClick(
-                    MessageDTO(
-                        0, phoneNumber, message, selectedDateAndTime.toFormattedDateTime(), false
+
+                isValidPhoneNumber = !phoneNumber.isNullOrEmpty()
+                isValidMessage = !message.isNullOrEmpty()
+                isSelectedDateValid = !selectedDate.isNullOrEmpty() || selectedDate.trim().length != 0
+                isSelectedTimeValid = !selectedTime.isNullOrEmpty() || selectedTime.trim().length != 0
+
+                if (isValidPhoneNumber && isValidMessage && isSelectedDateValid && isSelectedTimeValid) {
+                    onAddMessageBtnClick(
+                        MessageDTO(
+                            0,
+                            phoneNumber,
+                            message,
+                            ("$selectedDate $selectedTime"),
+                            false
+                        )
                     )
-                )
+                }
             }, modifier = Modifier.fillMaxWidth()
         ) {
             Text(text = stringResource(id = R.string.add_message))
@@ -176,54 +216,116 @@ fun MessageInputLayout(
 }
 
 @Composable
+fun SmsInputField(
+    value: String,
+    onValueChange: (String) -> Unit,
+    leadingIcon: ImageVector,
+    keyboardOptions: KeyboardOptions,
+    placeholderId: Int,
+    isValid: Boolean,
+    maxLines: Int = 1,
+    errorMessage: String = "",
+    modifier: Modifier
+) {
+    Column (
+        modifier = modifier.animateContentSize()
+    ) {
+        TextField(
+            value = value,
+            maxLines = maxLines,
+            onValueChange = onValueChange,
+            modifier = Modifier.fillMaxWidth(),
+            leadingIcon = { Icon(imageVector = leadingIcon, contentDescription = "") },
+            keyboardOptions = keyboardOptions,
+            placeholder = { Text(text = stringResource(id = placeholderId)) }
+        )
+
+        AnimatedVisibility(
+            visible = !isValid,
+            enter = slideInVertically() + fadeIn(),
+            exit = slideOutVertically() + fadeOut()
+        ) {
+            Text(errorMessage, color = MaterialTheme.colorScheme.error)
+        }
+    }
+}
+
+@Composable
 fun DateAndTimeInputLayout(
-    onDateButtonClick: () -> Unit, onTimeButtonClick: () -> Unit, modifier: Modifier = Modifier
+    date: String,
+    time: String,
+    isDateValid: Boolean,
+    isTimeValid: Boolean,
+    onDateButtonClick: () -> Unit,
+    onTimeButtonClick: () -> Unit,
+    modifier: Modifier = Modifier
 ) {
     Row(
         modifier = modifier.fillMaxWidth(), horizontalArrangement = Arrangement.SpaceBetween
     ) {
         DateButton(
             icon = R.drawable.baseline_calendar_month_24,
-            title = "Date",
+            title = date,
             onButtonClick = onDateButtonClick,
-            modifier = Modifier.weight(0.5f)
+            modifier = Modifier.weight(0.5f),
+            isValid = isDateValid,
+            errorMessage = "Choose date!"
         )
         Spacer(modifier = Modifier.width(12.dp))
         DateButton(
             icon = R.drawable.baseline_access_time_filled_24,
-            title = "Time",
+            title = time,
             onButtonClick = onTimeButtonClick,
-            modifier = Modifier.weight(0.5f)
+            modifier = Modifier.weight(0.5f),
+            isValid = isTimeValid,
+            errorMessage = "Choose time!"
         )
     }
 }
 
 @Composable
 fun DateButton(
-    icon: Int, title: String, onButtonClick: () -> Unit, modifier: Modifier = Modifier
+    icon: Int,
+    title: String,
+    onButtonClick: () -> Unit,
+    isValid: Boolean,
+    errorMessage: String = "",
+    modifier: Modifier = Modifier
 ) {
-    Card(
-        modifier = modifier.height(60.dp),
-        shape = MaterialTheme.shapes.small,
-        onClick = onButtonClick
+    Column (
+        modifier = modifier.animateContentSize (),
     ) {
-        Box(
-            contentAlignment = Alignment.Center
+        Card(
+            modifier = Modifier.height(40.dp),
+            shape = MaterialTheme.shapes.small,
+            onClick = onButtonClick
         ) {
-            Row(
-                modifier = Modifier.fillMaxWidth(), verticalAlignment = Alignment.CenterVertically
+            Box(
+                contentAlignment = Alignment.Center
             ) {
-                Icon(
-                    modifier = Modifier
-                        .fillMaxHeight()
-                        .padding(12.dp),
-                    painter = painterResource(icon),
-                    contentDescription = ""
-                )
-                Text(
-                    text = title
-                )
+                Row(
+                    modifier = Modifier.fillMaxWidth(),
+                    verticalAlignment = Alignment.CenterVertically
+                ) {
+                    Icon(
+                        modifier = Modifier
+                            .fillMaxHeight()
+                            .padding(12.dp),
+                        painter = painterResource(icon),
+                        contentDescription = ""
+                    )
+                    Text(
+                        text = title
+                    )
+                }
             }
+        }
+        AnimatedVisibility(
+            visible = !isValid,
+            enter = slideInVertically() + fadeIn(),
+            exit = slideOutVertically() + fadeOut()
+        ) {
+            Text(errorMessage, color = Color.Red)
         }
     }
 }
@@ -238,7 +340,6 @@ fun MaterialDatePickerDialog(
         TextButton(onClick = {
             val formattedDate = formatter.format(Date(daterPickerState.selectedDateMillis!!))
             onOkBtnClick(formattedDate.toString())
-            Log.d("TAG", "MaterialDatePickerDialog: ${formatter.format(Date(daterPickerState.selectedDateMillis!!))}")
         }) {
             Text(text = "Ok")
         }
@@ -250,46 +351,21 @@ fun MaterialDatePickerDialog(
 }
 
 @Composable
-fun TimePickerDialog() {
-    val timePickerState = rememberTimePickerState()
-
-    Dialog(onDismissRequest = { /*TODO*/ }, ) {
-        TimePicker(state = timePickerState)
-    }
-
-    /*AlertDialog(onDismissRequest = { *//*TODO*//* }, confirmButton = {
-        TextButton(onClick = {
-            Log.d("TAG", "TimePickerDialog: ${timePickerState.hour}")
-        }) {
-            Text(text = "Ok")
-        }
-    })*/
-}
-
-@Composable
 fun TimePickerDialog(
     title: String = "Select Time",
     onCancel: () -> Unit,
     onConfirm: (String) -> Unit,
-    toggle: @Composable () -> Unit = {},
-    content: @Composable () -> Unit,
+    toggle: @Composable () -> Unit = {}
 ) {
+
+    val timePickerState = rememberTimePickerState()
+
     Dialog(
         onDismissRequest = onCancel,
         properties = DialogProperties(
             usePlatformDefaultWidth = false
         ),
     ) {
-        val timePickerState = rememberTimePickerState()
-        val selectedTime = remember {
-            val calendar = Calendar.getInstance()
-            calendar.set(Calendar.HOUR_OF_DAY, timePickerState.hour)
-            calendar.set(Calendar.MINUTE, timePickerState.minute)
-            calendar.time
-        }
-        val formattedTime = remember {
-            SimpleDateFormat("hh:mm a", Locale.getDefault()).format(selectedTime)
-        }
 
         Surface(
             shape = MaterialTheme.shapes.extraLarge,
@@ -328,8 +404,7 @@ fun TimePickerDialog(
                     ) { Text("Cancel") }
                     TextButton(
                         onClick = {
-                            onConfirm(formattedTime)
-                            Log.d("TAG", "TimePickerDialog: $formattedTime")
+                            onConfirm(timePickerState.toFormattedTime())
                         }
                     ) { Text("OK") }
                 }
@@ -337,3 +412,8 @@ fun TimePickerDialog(
         }
     }
 }
+
+data class Validation(
+    var value: String,
+    var isInvalid: Boolean
+)
