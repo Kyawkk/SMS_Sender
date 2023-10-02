@@ -31,6 +31,7 @@ import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Add
 import androidx.compose.material.icons.filled.Delete
+import androidx.compose.material.icons.filled.Edit
 import androidx.compose.material.icons.filled.KeyboardArrowDown
 import androidx.compose.material.icons.filled.KeyboardArrowUp
 import androidx.compose.material3.Button
@@ -224,6 +225,15 @@ private fun MessageListItem(
                         onDeleteItemClick(messageDTO)
                     }
                 )
+                ActionListItem(
+                    Icons.Default.Edit,
+                    "Edit",
+                    action = {
+                        isExpanded = false
+
+                    }
+                )
+                Spacer(Modifier.height(12.dp))
             }
         }
     }
@@ -275,7 +285,7 @@ fun ActionListItem(
     icon: ImageVector,
     title: String,
     action: () -> Unit,
-    modifier: Modifier = Modifier.padding(12.dp)
+    modifier: Modifier = Modifier.padding(horizontal = 12.dp)
 ) {
     Row(
         modifier = modifier

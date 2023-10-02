@@ -1,15 +1,13 @@
 @file:OptIn(
     ExperimentalMaterial3Api::class,
     ExperimentalMaterial3Api::class,
-    ExperimentalMaterial3Api::class
+    ExperimentalMaterial3Api::class, ExperimentalMaterial3Api::class
 )
 
 package com.kyawzinlinn.smssender.ui.add
 
 import android.os.Build
-import android.util.Log
 import androidx.annotation.RequiresApi
-import androidx.compose.animation.AnimatedContent
 import androidx.compose.animation.AnimatedVisibility
 import androidx.compose.animation.animateContentSize
 import androidx.compose.animation.fadeIn
@@ -17,6 +15,7 @@ import androidx.compose.animation.fadeOut
 import androidx.compose.animation.slideInVertically
 import androidx.compose.animation.slideOutVertically
 import androidx.compose.foundation.background
+import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
@@ -29,6 +28,7 @@ import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.width
+import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.text.KeyboardOptions
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Email
@@ -56,7 +56,6 @@ import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
-import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.res.stringResource
@@ -66,6 +65,7 @@ import androidx.compose.ui.unit.dp
 import androidx.compose.ui.window.Dialog
 import androidx.compose.ui.window.DialogProperties
 import androidx.lifecycle.viewmodel.compose.viewModel
+import androidx.wear.compose.material.Checkbox
 import com.kyawzinlinn.smssender.AppViewModelProvider
 import com.kyawzinlinn.smssender.R
 import com.kyawzinlinn.smssender.model.MessageDTO
@@ -74,10 +74,9 @@ import com.kyawzinlinn.smssender.ui.navigation.NavigationDestination
 import com.kyawzinlinn.smssender.ui.screen.NavigateIconType
 import com.kyawzinlinn.smssender.ui.screen.SmsAppTopBar
 import com.kyawzinlinn.smssender.ui.screen.SmsViewModel
-import com.kyawzinlinn.smssender.utils.toFormattedDateTime
+import com.kyawzinlinn.smssender.utils.DateValidationUtils
 import com.kyawzinlinn.smssender.utils.toFormattedTime
 import java.text.SimpleDateFormat
-import java.time.LocalDateTime
 import java.util.Date
 import java.util.Locale
 
@@ -121,21 +120,21 @@ fun MessageInputLayout(
     var message by rememberSaveable { mutableStateOf("") }
     var isValidMessage by rememberSaveable { mutableStateOf(true) }
 
-    var selectedDateAndTime by rememberSaveable { mutableStateOf(LocalDateTime.now()) }
     var showDatePickerDialog by rememberSaveable { mutableStateOf(false) }
     var showTimePickerDialog by rememberSaveable { mutableStateOf(false) }
 
-    var selectedDate by rememberSaveable { mutableStateOf("") }
+    var selectedDate by rememberSaveable { mutableStateOf("Date") }
     var isSelectedDateValid by rememberSaveable { mutableStateOf(true) }
-    var selectedTime by rememberSaveable { mutableStateOf("") }
+    var selectedTime by rememberSaveable { mutableStateOf("Time") }
     var isSelectedTimeValid by rememberSaveable { mutableStateOf(true) }
+    var isEveryday by rememberSaveable { mutableStateOf(false) }
 
     Column(
         modifier = modifier
-            .padding(horizontal = 8.dp, vertical = 8.dp)
+            .padding(horizontal = 12.dp, vertical = 12.dp)
             .animateContentSize()
             .fillMaxSize(),
-        verticalArrangement = Arrangement.spacedBy(8.dp)
+        verticalArrangement = Arrangement.spacedBy(12.dp)
     ) {
         SmsInputField(
             value = phoneNumber,
@@ -168,9 +167,22 @@ fun MessageInputLayout(
             time = selectedTime,
             isDateValid = isSelectedDateValid,
             isTimeValid = isSelectedTimeValid,
+            isEveryday = isEveryday,
             onDateButtonClick = { showDatePickerDialog = true },
             onTimeButtonClick = { showTimePickerDialog = true }
         )
+
+        Row(
+            modifier = Modifier.clickable {
+                isEveryday = !isEveryday
+            }
+        ) {
+            Checkbox(
+                checked = isEveryday
+            )
+            Spacer(Modifier.width(8.dp))
+            Text(text = "Everyday")
+        }
 
         if (showDatePickerDialog) MaterialDatePickerDialog(
             onDismiss = {
@@ -191,20 +203,21 @@ fun MessageInputLayout(
 
         Button(
             onClick = {
-
                 isValidPhoneNumber = !phoneNumber.isNullOrEmpty()
                 isValidMessage = !message.isNullOrEmpty()
-                isSelectedDateValid = !selectedDate.isNullOrEmpty() || selectedDate.trim().length != 0
-                isSelectedTimeValid = !selectedTime.isNullOrEmpty() || selectedTime.trim().length != 0
+                isSelectedDateValid = DateValidationUtils.validateDate(selectedDate)
+                isSelectedTimeValid = DateValidationUtils.validateTime(selectedTime)
 
-                if (isValidPhoneNumber && isValidMessage && isSelectedDateValid && isSelectedTimeValid) {
+                if (isEveryday) selectedDate = DateValidationUtils.getTodayDate()
+
+                if (isValidPhoneNumber && isValidMessage && (isEveryday || isSelectedDateValid) && isSelectedTimeValid) {
                     onAddMessageBtnClick(
                         MessageDTO(
                             0,
                             phoneNumber,
                             message,
-                            ("$selectedDate $selectedTime"),
-                            false
+                            "$selectedDate $selectedTime",
+                            isEveryday
                         )
                     )
                 }
@@ -227,7 +240,7 @@ fun SmsInputField(
     errorMessage: String = "",
     modifier: Modifier
 ) {
-    Column (
+    Column(
         modifier = modifier.animateContentSize()
     ) {
         TextField(
@@ -256,27 +269,34 @@ fun DateAndTimeInputLayout(
     time: String,
     isDateValid: Boolean,
     isTimeValid: Boolean,
+    isEveryday: Boolean,
     onDateButtonClick: () -> Unit,
     onTimeButtonClick: () -> Unit,
     modifier: Modifier = Modifier
 ) {
     Row(
-        modifier = modifier.fillMaxWidth(), horizontalArrangement = Arrangement.SpaceBetween
+        modifier = modifier
+            .fillMaxWidth(),
+        horizontalArrangement = Arrangement.SpaceBetween
     ) {
-        DateButton(
-            icon = R.drawable.baseline_calendar_month_24,
-            title = date,
-            onButtonClick = onDateButtonClick,
-            modifier = Modifier.weight(0.5f),
-            isValid = isDateValid,
-            errorMessage = "Choose date!"
-        )
-        Spacer(modifier = Modifier.width(12.dp))
+        if (!isEveryday) {
+            DateButton(
+                icon = R.drawable.baseline_calendar_month_24,
+                title = date,
+                onButtonClick = onDateButtonClick,
+                modifier = Modifier.weight(0.5f),
+                isValid = isDateValid,
+                errorMessage = "Choose date!"
+            )
+            Spacer(modifier = Modifier.width(12.dp))
+        }
         DateButton(
             icon = R.drawable.baseline_access_time_filled_24,
             title = time,
             onButtonClick = onTimeButtonClick,
-            modifier = Modifier.weight(0.5f),
+            modifier = Modifier
+                .weight(0.5f)
+                .animateContentSize(),
             isValid = isTimeValid,
             errorMessage = "Choose time!"
         )
@@ -292,12 +312,12 @@ fun DateButton(
     errorMessage: String = "",
     modifier: Modifier = Modifier
 ) {
-    Column (
-        modifier = modifier.animateContentSize (),
+    Column(
+        modifier = modifier.animateContentSize(),
     ) {
         Card(
-            modifier = Modifier.height(40.dp),
-            shape = MaterialTheme.shapes.small,
+            modifier = Modifier.height(46.dp),
+            shape = RoundedCornerShape(4.dp),
             onClick = onButtonClick
         ) {
             Box(
@@ -307,13 +327,14 @@ fun DateButton(
                     modifier = Modifier.fillMaxWidth(),
                     verticalAlignment = Alignment.CenterVertically
                 ) {
+                    Spacer(Modifier.width(12.dp))
                     Icon(
                         modifier = Modifier
-                            .fillMaxHeight()
-                            .padding(12.dp),
+                            .fillMaxHeight(),
                         painter = painterResource(icon),
                         contentDescription = ""
                     )
+                    Spacer(Modifier.width(16.dp))
                     Text(
                         text = title
                     )
@@ -325,7 +346,7 @@ fun DateButton(
             enter = slideInVertically() + fadeIn(),
             exit = slideOutVertically() + fadeOut()
         ) {
-            Text(errorMessage, color = Color.Red)
+            Text(errorMessage, color = MaterialTheme.colorScheme.error)
         }
     }
 }
@@ -412,8 +433,3 @@ fun TimePickerDialog(
         }
     }
 }
-
-data class Validation(
-    var value: String,
-    var isInvalid: Boolean
-)

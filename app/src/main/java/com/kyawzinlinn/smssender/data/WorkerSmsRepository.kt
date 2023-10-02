@@ -13,6 +13,7 @@ import androidx.work.PeriodicWorkRequest
 import androidx.work.WorkManager
 import androidx.work.WorkRequest
 import com.kyawzinlinn.smssender.model.Message
+import com.kyawzinlinn.smssender.utils.KEY_IS_TIME_OVER
 import com.kyawzinlinn.smssender.utils.KEY_MESSAGE
 import com.kyawzinlinn.smssender.utils.KEY_PHONE_NUMBER
 import com.kyawzinlinn.smssender.utils.SmsUtils
@@ -44,6 +45,8 @@ class WorkerSmsRepository(private val context: Context) : SmsRepository {
             message.delayTime.toLocalDateTime().toEpochSecond(ZoneOffset.UTC) - now.toEpochSecond(
                 ZoneOffset.UTC
             )
+
+        data.putBoolean(KEY_IS_TIME_OVER,(delayInSeconds <= 0))
 
         if (message.isEveryDay) {
             val periodicWorkRequest = PeriodicWorkRequest.Builder(
