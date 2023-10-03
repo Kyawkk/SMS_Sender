@@ -66,6 +66,7 @@ dependencies {
     implementation("androidx.room:room-ktx:$room_version")
 
     implementation("androidx.navigation:navigation-compose:$nav_version")
+    implementation ("com.google.code.gson:gson:2.10.1")
 
 
     // To use Kotlin annotation processing tool (kapt)

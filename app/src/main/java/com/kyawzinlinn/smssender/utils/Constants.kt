@@ -11,3 +11,9 @@ const val KEY_IS_TIME_OVER = "KEY IS TIME OVER"
 const val CHANNEL_ID = "10221"
 const val REQUEST_CODE = 342
 const val NOTIFICATION_ID = 92
+
+enum class ScreenTitles (val title: String){
+    HOME("Home"),
+    ADD("Add Screen"),
+    UPDATE("Update Screen")
+}

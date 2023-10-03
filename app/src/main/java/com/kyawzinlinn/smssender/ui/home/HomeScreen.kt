@@ -65,19 +65,21 @@ import com.kyawzinlinn.smssender.AppViewModelProvider
 import com.kyawzinlinn.smssender.data.DataSource
 import com.kyawzinlinn.smssender.model.MessageDTO
 import com.kyawzinlinn.smssender.model.toMessage
+import com.kyawzinlinn.smssender.ui.add.SmsNavigationType
 import com.kyawzinlinn.smssender.ui.navigation.NavigationDestination
 import com.kyawzinlinn.smssender.ui.screen.SmsAppTopBar
 import com.kyawzinlinn.smssender.ui.screen.SmsViewModel
+import com.kyawzinlinn.smssender.utils.ScreenTitles
 
 object HomeScreenDestination : NavigationDestination {
     override val route: String = "Home"
-    override val title: String = "Home"
+    override val title: String = ScreenTitles.HOME.title
 }
 
 @Composable
 fun HomeScreen(
     viewModel: SmsViewModel = viewModel(factory = AppViewModelProvider.Factory),
-    navigateToAddScreen: () -> Unit,
+    navigateToAddScreen: (SmsNavigationType, MessageDTO) -> Unit,
     modifier: Modifier = Modifier
 ) {
     val permissionState =
@@ -91,7 +93,7 @@ fun HomeScreen(
             title = HomeScreenDestination.title, showNavigateIcon = false
         )
     }, floatingActionButton = {
-        FloatingActionButton(onClick = navigateToAddScreen) {
+        FloatingActionButton(onClick = { navigateToAddScreen(SmsNavigationType.ADD, MessageDTO(0,"","","",false)) }) {
             Icon(imageVector = Icons.Default.Add, contentDescription = "")
         }
     },
@@ -104,15 +106,21 @@ fun HomeScreen(
         ) {
 
             if (permissionState.status == PermissionStatus.Granted) {
-                MessageContentList(messages = messages, onMessageItemClicked = {
+                MessageContentList(messages = messages,
+                    onMessageItemClicked = {
 
-                }, toggleSmsSenderWork = { isActive, message ->
-                    if (isActive) viewModel.sendSms(message.toMessage())
-                    else viewModel.cancelSmsWorker(message)
-                },
+                    },
+                    toggleSmsSenderWork = { isActive, message ->
+                        if (isActive) viewModel.sendSms(message.toMessage())
+                        else viewModel.cancelSmsWorker(message)
+                    },
                     onDeleteItemClick = {
                         viewModel.deleteMessage(it)
-                    })
+                    },
+                    onUpdateItemClick = {
+                        navigateToAddScreen(SmsNavigationType.UPDATE, it)
+                    }
+                )
             } else {
                 Button(
                     onClick = {
@@ -135,7 +143,8 @@ private fun MessageContentList(
     onMessageItemClicked: (MessageDTO) -> Unit,
     modifier: Modifier = Modifier,
     toggleSmsSenderWork: (Boolean, MessageDTO) -> Unit,
-    onDeleteItemClick: (MessageDTO) -> Unit
+    onDeleteItemClick: (MessageDTO) -> Unit,
+    onUpdateItemClick: (MessageDTO) -> Unit
 ) {
     LazyColumn(
         modifier = modifier,
@@ -148,7 +157,8 @@ private fun MessageContentList(
                 onItemClicked = onMessageItemClicked,
                 modifier = Modifier.animateItemPlacement(),
                 toggleSmsSenderWork = toggleSmsSenderWork,
-                onDeleteItemClick = onDeleteItemClick
+                onDeleteItemClick = onDeleteItemClick,
+                onUpdateItemClick = onUpdateItemClick
             )
         }
     }
@@ -160,7 +170,8 @@ private fun MessageListItem(
     onItemClicked: (MessageDTO) -> Unit,
     modifier: Modifier = Modifier,
     toggleSmsSenderWork: (Boolean, MessageDTO) -> Unit,
-    onDeleteItemClick: (MessageDTO) -> Unit
+    onDeleteItemClick: (MessageDTO) -> Unit,
+    onUpdateItemClick: (MessageDTO) -> Unit
 ) {
     var isActive by remember { mutableStateOf(true) }
     var isExpanded by remember { mutableStateOf(false) }
@@ -197,7 +208,8 @@ private fun MessageListItem(
                 Column(
                     modifier = Modifier
                         .fillMaxHeight(),
-                    verticalArrangement = Arrangement.SpaceBetween
+                    verticalArrangement = Arrangement.SpaceBetween,
+                    horizontalAlignment = Alignment.End
                 ) {
                     IconButton(onClick = { isExpanded = !isExpanded }) {
                         Icon(
@@ -230,7 +242,7 @@ private fun MessageListItem(
                     "Edit",
                     action = {
                         isExpanded = false
-
+                        onUpdateItemClick(messageDTO)
                     }
                 )
                 Spacer(Modifier.height(12.dp))

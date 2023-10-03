@@ -4,6 +4,7 @@ import androidx.room.ColumnInfo
 import androidx.room.Dao
 import androidx.room.Entity
 import androidx.room.PrimaryKey
+import java.io.Serializable
 import java.time.LocalDateTime
 
 @Entity("messages")
@@ -14,7 +15,7 @@ data class MessageDTO(
     @ColumnInfo("message") val message: String,
     @ColumnInfo("delay_time") val delayTime: String,
     @ColumnInfo("is_every_day") val isEveryDay: Boolean
-)
+): Serializable
 
 fun MessageDTO.toMessage(): Message{
     return Message(

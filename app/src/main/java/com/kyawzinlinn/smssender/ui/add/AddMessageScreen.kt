@@ -75,6 +75,7 @@ import com.kyawzinlinn.smssender.ui.screen.NavigateIconType
 import com.kyawzinlinn.smssender.ui.screen.SmsAppTopBar
 import com.kyawzinlinn.smssender.ui.screen.SmsViewModel
 import com.kyawzinlinn.smssender.utils.DateValidationUtils
+import com.kyawzinlinn.smssender.utils.ScreenTitles
 import com.kyawzinlinn.smssender.utils.toFormattedTime
 import java.text.SimpleDateFormat
 import java.util.Date
@@ -82,52 +83,89 @@ import java.util.Locale
 
 object AddMessageScreenDestination : NavigationDestination {
     override val route: String = "ADD"
-    override val title: String = "Add Message"
+    override val title: String = ScreenTitles.ADD.title
+}
+
+enum class SmsNavigationType {
+    ADD, UPDATE
 }
 
 @RequiresApi(Build.VERSION_CODES.O)
 @Composable
 fun AddMessageScreen(
-    viewModel: AddMessageViewModel = viewModel(factory = AppViewModelProvider.Factory),
+    addMessageViewModel: AddMessageViewModel = viewModel(factory = AppViewModelProvider.Factory),
     smsViewModel: SmsViewModel = viewModel(factory = AppViewModelProvider.Factory),
     modifier: Modifier = Modifier,
+    smsNavigationType: SmsNavigationType = SmsNavigationType.ADD,
+    messageToUpdate: MessageDTO = MessageDTO(0, "", "", "Date,Time", false),
     navigateUp: () -> Unit
 ) {
+    var title by rememberSaveable {
+        mutableStateOf(
+            when (smsNavigationType) {
+                SmsNavigationType.ADD -> AddMessageScreenDestination.title
+                SmsNavigationType.UPDATE -> ScreenTitles.UPDATE.title
+            }
+        )
+    }
     Scaffold(modifier = modifier, topBar = {
         SmsAppTopBar(
-            title = AddMessageScreenDestination.title,
+            title = title,
             showNavigateIcon = true,
             navigateIconType = NavigateIconType.ADD_SCREEN,
             navigateUp = navigateUp
         )
     }) {
-        MessageInputLayout(onAddMessageBtnClick = {
-            smsViewModel.sendSms(it.toMessage())
-            viewModel.addMessage(it)
-            navigateUp()
-        }, modifier = Modifier.padding(it))
+        MessageInputLayout(
+            messageToUpdate = messageToUpdate,
+            buttonTitle = title,
+            onAddMessageBtnClick = {
+                when(smsNavigationType) {
+                    SmsNavigationType.ADD -> {
+                        smsViewModel.sendSms(it.toMessage())
+                        addMessageViewModel.addMessage(it)
+                        navigateUp()
+                    }
+                    SmsNavigationType.UPDATE -> {
+                        smsViewModel.updateMessage(messageToUpdate = it, oldMessage = messageToUpdate)
+                        navigateUp()
+                    }
+                }
+            }, modifier = Modifier.padding(it)
+        )
     }
 }
 
 @RequiresApi(Build.VERSION_CODES.O)
 @Composable
 fun MessageInputLayout(
-    onAddMessageBtnClick: (MessageDTO) -> Unit, modifier: Modifier = Modifier
+    messageToUpdate: MessageDTO,
+    buttonTitle: String,
+    onAddMessageBtnClick: (MessageDTO) -> Unit,
+    modifier: Modifier = Modifier
 ) {
-    var phoneNumber by rememberSaveable { mutableStateOf("") }
+    var phoneNumber by rememberSaveable { mutableStateOf(messageToUpdate.phoneNumber) }
     var isValidPhoneNumber by rememberSaveable { mutableStateOf(true) }
 
-    var message by rememberSaveable { mutableStateOf("") }
+    var message by rememberSaveable { mutableStateOf(messageToUpdate.message) }
     var isValidMessage by rememberSaveable { mutableStateOf(true) }
 
     var showDatePickerDialog by rememberSaveable { mutableStateOf(false) }
     var showTimePickerDialog by rememberSaveable { mutableStateOf(false) }
 
-    var selectedDate by rememberSaveable { mutableStateOf("Date") }
+    var selectedDate by rememberSaveable {
+        mutableStateOf(
+            messageToUpdate.delayTime.split(",").get(0)
+        )
+    }
     var isSelectedDateValid by rememberSaveable { mutableStateOf(true) }
-    var selectedTime by rememberSaveable { mutableStateOf("Time") }
+    var selectedTime by rememberSaveable {
+        mutableStateOf(
+            messageToUpdate.delayTime.split(",").get(1)
+        )
+    }
     var isSelectedTimeValid by rememberSaveable { mutableStateOf(true) }
-    var isEveryday by rememberSaveable { mutableStateOf(false) }
+    var isEveryday by rememberSaveable { mutableStateOf(messageToUpdate.isEveryDay) }
 
     Column(
         modifier = modifier
@@ -146,7 +184,7 @@ fun MessageInputLayout(
             ),
             placeholderId = R.string.phone_no_placeholder,
             isValid = isValidPhoneNumber,
-            errorMessage = "Please enter valid phone number!"
+            errorMessage = "Please enter a valid phone number!"
         )
         SmsInputField(
             value = message,
@@ -216,14 +254,14 @@ fun MessageInputLayout(
                             0,
                             phoneNumber,
                             message,
-                            "$selectedDate $selectedTime",
+                            "$selectedDate,$selectedTime",
                             isEveryday
                         )
                     )
                 }
             }, modifier = Modifier.fillMaxWidth()
         ) {
-            Text(text = stringResource(id = R.string.add_message))
+            Text(text = buttonTitle)
         }
     }
 }
