@@ -2,14 +2,24 @@ package com.kyawzinlinn.smssender.ui.theme
 
 import androidx.compose.material3.Typography
 import androidx.compose.ui.text.TextStyle
+import androidx.compose.ui.text.font.Font
 import androidx.compose.ui.text.font.FontFamily
+import androidx.compose.ui.text.font.FontStyle
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.sp
+import com.kyawzinlinn.smssender.R
 
 // Set of Material typography styles to start with
+val productSansFontFamily = FontFamily(
+        Font(R.font.productsans_bold, FontWeight.Bold),
+        Font(R.font.productsans_medium, FontWeight.Medium),
+        Font(R.font.productsans_thin, FontWeight.Light),
+        Font(R.font.productsans_italic, FontWeight.Normal, FontStyle.Italic),
+        Font(R.font.productsans_regular, FontWeight.Normal)
+)
 val Typography = Typography(
         bodyLarge = TextStyle(
-                fontFamily = FontFamily.Default,
+                fontFamily = productSansFontFamily,
                 fontWeight = FontWeight.Normal,
                 fontSize = 16.sp,
                 lineHeight = 24.sp,

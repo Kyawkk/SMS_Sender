@@ -14,6 +14,7 @@ const val NOTIFICATION_ID = 92
 
 enum class ScreenTitles (val title: String){
     HOME("Home"),
-    ADD("Add Screen"),
-    UPDATE("Update Screen")
+    ADD("Add Message"),
+    UPDATE("Update Message"),
+    REPLY("Reply Messages")
 }

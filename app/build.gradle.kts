@@ -67,6 +67,8 @@ dependencies {
 
     implementation("androidx.navigation:navigation-compose:$nav_version")
     implementation ("com.google.code.gson:gson:2.10.1")
+    implementation ("androidx.compose.material:material-icons-extended")
+    implementation ("androidx.compose.material:material:1.5.3")
 
 
     // To use Kotlin annotation processing tool (kapt)

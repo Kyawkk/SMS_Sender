@@ -14,6 +14,9 @@ interface MessageDao {
     @Query("select * from messages")
     fun getAllMessages(): Flow<List<MessageDTO>>
 
+    @Query("select * from messages where phone_number LIKE :query")
+    fun searchPhoneNumber(query: String): Flow<List<MessageDTO>>
+
     @Insert(onConflict = OnConflictStrategy.REPLACE)
     suspend fun addMessage(messageDTO: MessageDTO)
 

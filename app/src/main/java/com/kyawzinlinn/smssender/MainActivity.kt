@@ -1,6 +1,8 @@
 package com.kyawzinlinn.smssender
 
 import android.Manifest
+import android.content.BroadcastReceiver
+import android.content.Context
 import android.content.Intent
 import android.content.pm.PackageManager
 import android.os.Bundle
@@ -24,13 +26,19 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.core.app.ActivityCompat
 import androidx.core.content.ContextCompat
+import androidx.lifecycle.viewmodel.compose.viewModel
+import com.kyawzinlinn.smssender.ui.MessageReceiverViewModel
 import com.kyawzinlinn.smssender.ui.screen.SmsApp
 import com.kyawzinlinn.smssender.ui.theme.SMSSenderTheme
 import com.kyawzinlinn.smssender.utils.SMS_REQUEST_CODE
 
 class MainActivity : ComponentActivity() {
+    private lateinit var messageReceiver: BroadcastReceiver
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
+
+
+
         setContent {
             SMSSenderTheme {
                 Surface (

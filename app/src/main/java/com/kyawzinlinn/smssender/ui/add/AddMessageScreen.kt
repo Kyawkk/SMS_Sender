@@ -38,6 +38,8 @@ import androidx.compose.material3.Card
 import androidx.compose.material3.DatePicker
 import androidx.compose.material3.DatePickerDialog
 import androidx.compose.material3.DatePickerFormatter
+import androidx.compose.material3.DropdownMenu
+import androidx.compose.material3.DropdownMenuItem
 import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.Icon
 import androidx.compose.material3.MaterialTheme
@@ -50,6 +52,7 @@ import androidx.compose.material3.TimePicker
 import androidx.compose.material3.rememberDatePickerState
 import androidx.compose.material3.rememberTimePickerState
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.saveable.rememberSaveable
@@ -65,15 +68,14 @@ import androidx.compose.ui.unit.dp
 import androidx.compose.ui.window.Dialog
 import androidx.compose.ui.window.DialogProperties
 import androidx.lifecycle.viewmodel.compose.viewModel
+import androidx.room.util.query
 import androidx.wear.compose.material.Checkbox
 import com.kyawzinlinn.smssender.AppViewModelProvider
 import com.kyawzinlinn.smssender.R
 import com.kyawzinlinn.smssender.model.MessageDTO
 import com.kyawzinlinn.smssender.model.toMessage
 import com.kyawzinlinn.smssender.ui.navigation.NavigationDestination
-import com.kyawzinlinn.smssender.ui.screen.NavigateIconType
-import com.kyawzinlinn.smssender.ui.screen.SmsAppTopBar
-import com.kyawzinlinn.smssender.ui.screen.SmsViewModel
+import com.kyawzinlinn.smssender.ui.screen.HomeViewModel
 import com.kyawzinlinn.smssender.utils.DateValidationUtils
 import com.kyawzinlinn.smssender.utils.ScreenTitles
 import com.kyawzinlinn.smssender.utils.toFormattedTime
@@ -94,12 +96,23 @@ enum class SmsNavigationType {
 @Composable
 fun AddMessageScreen(
     addMessageViewModel: AddMessageViewModel = viewModel(factory = AppViewModelProvider.Factory),
-    smsViewModel: SmsViewModel = viewModel(factory = AppViewModelProvider.Factory),
+    homeViewModel: HomeViewModel = viewModel(factory = AppViewModelProvider.Factory),
     modifier: Modifier = Modifier,
     smsNavigationType: SmsNavigationType = SmsNavigationType.ADD,
-    messageToUpdate: MessageDTO = MessageDTO(0, "", "", "Date,Time", false),
+    messageToUpdate: MessageDTO = MessageDTO(0, "", "", "Date,Time", false, false),
     navigateUp: () -> Unit
 ) {
+    homeViewModel.updateTopBarUi(
+        title = when (smsNavigationType) {
+            SmsNavigationType.ADD -> ScreenTitles.ADD.title
+            SmsNavigationType.UPDATE -> ScreenTitles.UPDATE.title
+        },
+        showNavigationIcon = true,
+        navigateUp = navigateUp
+    )
+    val uiState by homeViewModel.uiState.collectAsState()
+    val phoneNumbers by uiState.phoneNumbers.collectAsState(emptyList())
+
     var title by rememberSaveable {
         mutableStateOf(
             when (smsNavigationType) {
@@ -108,26 +121,29 @@ fun AddMessageScreen(
             }
         )
     }
-    Scaffold(modifier = modifier, topBar = {
-        SmsAppTopBar(
-            title = title,
-            showNavigateIcon = true,
-            navigateIconType = NavigateIconType.ADD_SCREEN,
-            navigateUp = navigateUp
-        )
-    }) {
+    Scaffold(modifier = modifier) {
         MessageInputLayout(
             messageToUpdate = messageToUpdate,
             buttonTitle = title,
+            onValueChange = {
+                homeViewModel.searchPhoneNumbers(it)
+            },
+            phoneNumbers = phoneNumbers.map { it.phoneNumber },
             onAddMessageBtnClick = {
-                when(smsNavigationType) {
+                when (smsNavigationType) {
                     SmsNavigationType.ADD -> {
-                        smsViewModel.sendSms(it.toMessage())
+                        homeViewModel.sendMessage(it.toMessage())
                         addMessageViewModel.addMessage(it)
                         navigateUp()
                     }
+
                     SmsNavigationType.UPDATE -> {
-                        smsViewModel.updateMessage(messageToUpdate = it, oldMessage = messageToUpdate)
+                        if ((messageToUpdate.message + messageToUpdate.delayTime) != (it.message + it.delayTime)) {
+                            homeViewModel.updateMessage(
+                                messageToUpdate = it.copy(id = messageToUpdate.id),
+                                oldMessage = messageToUpdate
+                            )
+                        }
                         navigateUp()
                     }
                 }
@@ -141,6 +157,8 @@ fun AddMessageScreen(
 fun MessageInputLayout(
     messageToUpdate: MessageDTO,
     buttonTitle: String,
+    phoneNumbers: List<String>,
+    onValueChange: (String) -> Unit,
     onAddMessageBtnClick: (MessageDTO) -> Unit,
     modifier: Modifier = Modifier
 ) {
@@ -176,7 +194,14 @@ fun MessageInputLayout(
     ) {
         SmsInputField(
             value = phoneNumber,
-            onValueChange = { phoneNumber = it },
+            onValueChange = {
+                onValueChange(it)
+                phoneNumber = it
+            },
+            suggestions = phoneNumbers,
+            onSuggestionClick = {
+                phoneNumber = it
+            },
             modifier = Modifier.fillMaxWidth(),
             leadingIcon = Icons.Default.Phone,
             keyboardOptions = KeyboardOptions.Default.copy(
@@ -255,7 +280,8 @@ fun MessageInputLayout(
                             phoneNumber,
                             message,
                             "$selectedDate,$selectedTime",
-                            isEveryday
+                            isEveryday,
+                            true
                         )
                     )
                 }
@@ -267,12 +293,35 @@ fun MessageInputLayout(
 }
 
 @Composable
+fun PhoneNumberOptionDropdown(
+    isExpanded: Boolean = false,
+    phoneNumbers: List<String> = emptyList<String>(),
+    onPhoneNumberClick: (String) -> Unit,
+    modifier: Modifier = Modifier
+) {
+    DropdownMenu(
+        expanded = isExpanded,
+        modifier = modifier.fillMaxWidth().padding(horizontal = 16.dp),
+        onDismissRequest = {}
+    ) {
+        phoneNumbers.forEach {
+            DropdownMenuItem(
+                text = { Text(it) },
+                onClick = { onPhoneNumberClick(it) }
+            )
+        }
+    }
+}
+
+@Composable
 fun SmsInputField(
     value: String,
     onValueChange: (String) -> Unit,
     leadingIcon: ImageVector,
     keyboardOptions: KeyboardOptions,
     placeholderId: Int,
+    suggestions: List<String> = emptyList(),
+    onSuggestionClick: (String) -> Unit = {},
     isValid: Boolean,
     maxLines: Int = 1,
     errorMessage: String = "",
@@ -290,6 +339,14 @@ fun SmsInputField(
             keyboardOptions = keyboardOptions,
             placeholder = { Text(text = stringResource(id = placeholderId)) }
         )
+
+//        if (suggestions.isNotEmpty()) {
+//            PhoneNumberOptionDropdown(
+//                isExpanded = value.isNotEmpty(),
+//                phoneNumbers = suggestions,
+//                onPhoneNumberClick = onSuggestionClick
+//            )
+//        }
 
         AnimatedVisibility(
             visible = !isValid,

@@ -14,7 +14,8 @@ data class MessageDTO(
     @ColumnInfo("phone_number") val phoneNumber: String,
     @ColumnInfo("message") val message: String,
     @ColumnInfo("delay_time") val delayTime: String,
-    @ColumnInfo("is_every_day") val isEveryDay: Boolean
+    @ColumnInfo("is_every_day") val isEveryDay: Boolean,
+    @ColumnInfo("is_active") val isActive: Boolean
 ): Serializable
 
 fun MessageDTO.toMessage(): Message{
