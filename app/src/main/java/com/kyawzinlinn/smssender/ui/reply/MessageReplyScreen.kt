@@ -1,13 +1,10 @@
 package com.kyawzinlinn.smssender.ui.reply
 
-import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.fillMaxSize
-import androidx.compose.material.MaterialTheme
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
-import androidx.compose.ui.graphics.Color
 import androidx.lifecycle.viewmodel.compose.viewModel
 import androidx.wear.compose.material.Text
 import com.kyawzinlinn.smssender.AppViewModelProvider
@@ -16,9 +13,8 @@ import com.kyawzinlinn.smssender.ui.screen.HomeViewModel
 import com.kyawzinlinn.smssender.utils.ScreenTitles
 
 object MessageReplyScreenDestination: NavigationDestination{
-    override val route: String = "Reply"
+    override val route: String = "Reply Messages"
     override val title: String = ScreenTitles.REPLY.title
-
 }
 
 @Composable

@@ -67,7 +67,6 @@ import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.rememberCoroutineScope
-import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
@@ -87,7 +86,6 @@ import com.kyawzinlinn.smssender.receiver.MessageReceiver
 import com.kyawzinlinn.smssender.ui.add.SmsNavigationType
 import com.kyawzinlinn.smssender.ui.navigation.NavigationDestination
 import com.kyawzinlinn.smssender.ui.screen.HomeViewModel
-import com.kyawzinlinn.smssender.utils.PermissionUtils
 import com.kyawzinlinn.smssender.utils.ScreenTitles
 import kotlinx.coroutines.launch
 
@@ -108,6 +106,7 @@ fun HomeScreen(
     val scope = rememberCoroutineScope()
     val snackbarHostState = remember { SnackbarHostState() }
     var selectedScreen by remember { mutableStateOf(HomeScreenDestination.title) }
+    var showEmptyScreen by remember { mutableStateOf(false) }
 
     val smsPermissionState =
         rememberPermissionState(permission = Manifest.permission.SEND_SMS, onPermissionResult = {})
@@ -115,9 +114,17 @@ fun HomeScreen(
         rememberPermissionState(permission = Manifest.permission.READ_SMS, onPermissionResult = {})
     val notificationPermissionState = rememberPermissionState(
         permission = Manifest.permission.POST_NOTIFICATIONS,
-        onPermissionResult = {})
+        onPermissionResult = {}
+    )
+
+    val allPermissionGranted =
+        smsPermissionState.status.isGranted && notificationPermissionState.status.isGranted && readSmsPermissionState.status.isGranted
 
     homeViewModel.updateTopBarUi(HomeScreenDestination.title, false)
+
+    LaunchedEffect(messages){
+        showEmptyScreen = messages.isEmpty() && allPermissionGranted
+    }
 
     DisposableEffect(Unit) {
         val receiver = MessageReceiver {
@@ -132,100 +139,78 @@ fun HomeScreen(
         }
     }
 
-    val allPermissionGranted =
-        smsPermissionState.status.isGranted && notificationPermissionState.status.isGranted && readSmsPermissionState.status.isGranted
-
-    Scaffold(
-        snackbarHost = { SnackbarHost(hostState = snackbarHostState) },
-        floatingActionButton = {
-            AnimatedVisibility(
-                visible = allPermissionGranted,
-                enter = scaleIn(animationSpec = tween(300), initialScale = 0.8f) + fadeIn(),
-                exit = scaleOut(animationSpec = tween(300), targetScale = 0.8f) + fadeOut()
+    Column(modifier = modifier) {
+        when (selectedScreen) {
+            ScreenTitles.HOME.title -> Column(
+                modifier = Modifier
+                    .fillMaxSize()
             ) {
-                FloatingActionButton(onClick = {
-                    navigateToAddScreen(
-                        SmsNavigationType.ADD, MessageDTO(0, "", "", "", false, false)
-                    )
-                }) {
-                    Icon(imageVector = Icons.Default.Add, contentDescription = "")
-                }
-            }
-        },
-        modifier = modifier
-    ) {
-        Column(modifier = Modifier.padding(it)) {
-            when (selectedScreen) {
-                ScreenTitles.HOME.title -> Column(
-                    modifier = Modifier
-                        .fillMaxSize()
-                        .padding(it)
+
+                AnimatedVisibility(
+                    visible = showEmptyScreen,
+                    enter = scaleIn(animationSpec = tween(300), initialScale = 0.8f) + fadeIn(),
+                    exit = scaleOut(animationSpec = tween(300), targetScale = 0.8f) + fadeOut()
                 ) {
+                    NoMessagesLayout()
+                }
 
-                    AnimatedVisibility(
-                        visible = messages.size == 0 && allPermissionGranted,
-                        enter = scaleIn(animationSpec = tween(300), initialScale = 0.8f) + fadeIn(),
-                        exit = scaleOut(animationSpec = tween(300), targetScale = 0.8f) + fadeOut()
-                    ) {
-                        NoMessagesLayout()
+                AnimatedVisibility(
+                    visible = allPermissionGranted, enter = fadeIn(), exit = fadeOut()
+                ) {
+                    MessageContentList(messages = messages, onMessageItemClicked = {
+
+                    }, toggleSmsSenderWork = { isActive, message ->
+                        homeViewModel.toggleWorkStatus(isActive, message)
+                    }, onDeleteItemClick = {
+                        homeViewModel.deleteMessage(it)
+                    }, onUpdateItemClick = {
+                        navigateToAddScreen(SmsNavigationType.UPDATE, it)
                     }
+                    )
+                }
 
-                    AnimatedVisibility(
-                        visible = allPermissionGranted, enter = fadeIn(), exit = fadeOut()
+                AnimatedVisibility(
+                    !allPermissionGranted,
+                    enter = scaleIn(animationSpec = tween(300), initialScale = 0.8f) + fadeIn(),
+                    exit = scaleOut(animationSpec = tween(300), targetScale = 0.8f) + fadeOut()
+                ) {
+                    Box(
+                        modifier = Modifier.fillMaxSize(), contentAlignment = Alignment.Center
                     ) {
-                        MessageContentList(messages = messages, onMessageItemClicked = {
+                        PermissionsRequestScreen(smsPermissionState = smsPermissionState,
+                            notificationPermissionState = notificationPermissionState,
+                            readSmsPermissionState = readSmsPermissionState,
+                            onShouldShowRationale = {
+                                scope.launch {
+                                    val result = snackbarHostState.showSnackbar(
+                                        message = it,
+                                        actionLabel = "Open Settings",
+                                        duration = SnackbarDuration.Indefinite
+                                    )
+                                    when (result) {
+                                        SnackbarResult.ActionPerformed -> {
+                                            val intent =
+                                                Intent(Settings.ACTION_APPLICATION_DETAILS_SETTINGS).apply {
+                                                    data = Uri.fromParts(
+                                                        "package", context.packageName, null
+                                                    )
+                                                }
+                                            context.startActivity(intent)
+                                        }
 
-                        }, toggleSmsSenderWork = { isActive, message ->
-                            homeViewModel.toggleWorkStatus(isActive, message)
-                        }, onDeleteItemClick = {
-                            homeViewModel.deleteMessage(it)
-                        }, onUpdateItemClick = {
-                            navigateToAddScreen(SmsNavigationType.UPDATE, it)
-                        })
-                    }
+                                        SnackbarResult.Dismissed -> {
 
-                    AnimatedVisibility(
-                        !allPermissionGranted,
-                        enter = scaleIn(animationSpec = tween(300), initialScale = 0.8f) + fadeIn(),
-                        exit = scaleOut(animationSpec = tween(300), targetScale = 0.8f) + fadeOut()
-                    ) {
-                        Box(
-                            modifier = Modifier.fillMaxSize(), contentAlignment = Alignment.Center
-                        ) {
-                            PermissionsRequestScreen(smsPermissionState = smsPermissionState,
-                                notificationPermissionState = notificationPermissionState,
-                                readSmsPermissionState = readSmsPermissionState,
-                                onShouldShowRationale = {
-                                    scope.launch {
-                                        val result = snackbarHostState.showSnackbar(
-                                            message = it,
-                                            actionLabel = "Open Settings",
-                                            duration = SnackbarDuration.Indefinite
-                                        )
-                                        when (result) {
-                                            SnackbarResult.ActionPerformed -> {
-                                                val intent =
-                                                    Intent(Settings.ACTION_APPLICATION_DETAILS_SETTINGS).apply {
-                                                        data = Uri.fromParts(
-                                                            "package", context.packageName, null
-                                                        )
-                                                    }
-                                                context.startActivity(intent)
-                                            }
-
-                                            SnackbarResult.Dismissed -> {
-
-                                            }
                                         }
                                     }
-                                })
-                        }
+                                }
+                            }
+                        )
                     }
                 }
+            }
 
-                ScreenTitles.REPLY.title -> {
+            ScreenTitles.REPLY.title -> {
 
-                }
             }
         }
     }

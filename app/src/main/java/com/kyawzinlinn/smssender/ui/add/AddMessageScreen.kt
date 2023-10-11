@@ -29,6 +29,7 @@ import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.shape.RoundedCornerShape
+import androidx.compose.foundation.text.KeyboardActions
 import androidx.compose.foundation.text.KeyboardOptions
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Email
@@ -43,7 +44,6 @@ import androidx.compose.material3.DropdownMenuItem
 import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.Icon
 import androidx.compose.material3.MaterialTheme
-import androidx.compose.material3.Scaffold
 import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
 import androidx.compose.material3.TextButton
@@ -68,7 +68,6 @@ import androidx.compose.ui.unit.dp
 import androidx.compose.ui.window.Dialog
 import androidx.compose.ui.window.DialogProperties
 import androidx.lifecycle.viewmodel.compose.viewModel
-import androidx.room.util.query
 import androidx.wear.compose.material.Checkbox
 import com.kyawzinlinn.smssender.AppViewModelProvider
 import com.kyawzinlinn.smssender.R
@@ -121,16 +120,17 @@ fun AddMessageScreen(
             }
         )
     }
-    Scaffold(modifier = modifier) {
+    Column (modifier = modifier) {
         MessageInputLayout(
             messageToUpdate = messageToUpdate,
             buttonTitle = title,
             onValueChange = {
                 homeViewModel.searchPhoneNumbers(it)
             },
-            phoneNumbers = phoneNumbers.map { it.phoneNumber },
+            phoneNumbers = phoneNumbers.map { it.phoneNumber }.distinct(),
             onAddMessageBtnClick = {
                 when (smsNavigationType) {
+
                     SmsNavigationType.ADD -> {
                         homeViewModel.sendMessage(it.toMessage())
                         addMessageViewModel.addMessage(it)
@@ -147,7 +147,7 @@ fun AddMessageScreen(
                         navigateUp()
                     }
                 }
-            }, modifier = Modifier.padding(it)
+            }
         )
     }
 }
@@ -184,6 +184,7 @@ fun MessageInputLayout(
     }
     var isSelectedTimeValid by rememberSaveable { mutableStateOf(true) }
     var isEveryday by rememberSaveable { mutableStateOf(messageToUpdate.isEveryDay) }
+    var isDropdownVisible by rememberSaveable { mutableStateOf(false) }
 
     Column(
         modifier = modifier
@@ -195,17 +196,24 @@ fun MessageInputLayout(
         SmsInputField(
             value = phoneNumber,
             onValueChange = {
-                onValueChange(it)
                 phoneNumber = it
+                isDropdownVisible = it.isNotEmpty()
+                onValueChange(it)
             },
+            isDropdownVisible = isDropdownVisible,
             suggestions = phoneNumbers,
             onSuggestionClick = {
                 phoneNumber = it
+                isDropdownVisible = false
+            },
+            onKeyboardActionDone = {
+                isDropdownVisible = false
             },
             modifier = Modifier.fillMaxWidth(),
             leadingIcon = Icons.Default.Phone,
             keyboardOptions = KeyboardOptions.Default.copy(
-                keyboardType = KeyboardType.Number, imeAction = ImeAction.Next
+                keyboardType = KeyboardType.Number,
+                imeAction = ImeAction.Next
             ),
             placeholderId = R.string.phone_no_placeholder,
             isValid = isValidPhoneNumber,
@@ -298,10 +306,12 @@ fun PhoneNumberOptionDropdown(
     phoneNumbers: List<String> = emptyList<String>(),
     onPhoneNumberClick: (String) -> Unit,
     modifier: Modifier = Modifier
+        .fillMaxWidth()
+        .padding(horizontal = 16.dp)
 ) {
     DropdownMenu(
         expanded = isExpanded,
-        modifier = modifier.fillMaxWidth().padding(horizontal = 16.dp),
+        modifier = modifier,
         onDismissRequest = {}
     ) {
         phoneNumbers.forEach {
@@ -320,9 +330,11 @@ fun SmsInputField(
     leadingIcon: ImageVector,
     keyboardOptions: KeyboardOptions,
     placeholderId: Int,
+    isDropdownVisible: Boolean = false,
     suggestions: List<String> = emptyList(),
     onSuggestionClick: (String) -> Unit = {},
     isValid: Boolean,
+    onKeyboardActionDone: () -> Unit = {},
     maxLines: Int = 1,
     errorMessage: String = "",
     modifier: Modifier
@@ -334,19 +346,25 @@ fun SmsInputField(
             value = value,
             maxLines = maxLines,
             onValueChange = onValueChange,
+            keyboardActions = KeyboardActions(
+                onDone = { onKeyboardActionDone() }
+            ),
             modifier = Modifier.fillMaxWidth(),
             leadingIcon = { Icon(imageVector = leadingIcon, contentDescription = "") },
             keyboardOptions = keyboardOptions,
             placeholder = { Text(text = stringResource(id = placeholderId)) }
         )
 
-//        if (suggestions.isNotEmpty()) {
-//            PhoneNumberOptionDropdown(
-//                isExpanded = value.isNotEmpty(),
-//                phoneNumbers = suggestions,
-//                onPhoneNumberClick = onSuggestionClick
-//            )
-//        }
+        if (suggestions.isNotEmpty()) {
+            PhoneNumberOptionDropdown(
+                isExpanded = isDropdownVisible,
+                phoneNumbers = suggestions,
+                onPhoneNumberClick = onSuggestionClick,
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .padding(horizontal = 16.dp)
+            )
+        }
 
         AnimatedVisibility(
             visible = !isValid,

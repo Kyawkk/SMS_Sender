@@ -1,7 +1,6 @@
 package com.kyawzinlinn.smssender.ui.screen
 
 import android.util.Log
-import androidx.compose.runtime.mutableStateOf
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import com.kyawzinlinn.smssender.data.MessageDatabaseRepository
@@ -44,6 +43,14 @@ class HomeViewModel(
         }
     }
 
+    fun updateFloatingActionButtonStatus(showFloatingActionButton: Boolean){
+        _uiState.update {
+            it.copy(
+                showFloatingActionButton = showFloatingActionButton
+            )
+        }
+    }
+
     fun deleteMessage(message: MessageDTO){
         cancelMessageSenderWorker(message)
         viewModelScope.launch {
@@ -81,10 +88,12 @@ class HomeViewModel(
     }
 
     fun searchPhoneNumbers(query: String){
-        _uiState.update {
-            it.copy(
-                phoneNumbers = messageRepository.searchPhoneNumbers(query)
-            )
+        viewModelScope.launch {
+            _uiState.update {
+                it.copy(
+                    phoneNumbers = messageRepository.searchPhoneNumbers(query)
+                )
+            }
         }
     }
 
@@ -94,6 +103,7 @@ class HomeViewModel(
         val query: String = "",
         val title: String = HomeScreenDestination.title,
         val showNavigationIcon: Boolean = false,
+        val showFloatingActionButton: Boolean = true,
         val navigateUp: () -> Unit = {}
     )
 }
