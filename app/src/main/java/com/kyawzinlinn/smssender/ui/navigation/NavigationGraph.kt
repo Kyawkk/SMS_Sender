@@ -2,13 +2,6 @@ package com.kyawzinlinn.smssender.ui.navigation
 
 import android.util.Log
 import androidx.activity.compose.BackHandler
-import androidx.compose.animation.core.Spring
-import androidx.compose.animation.core.spring
-import androidx.compose.animation.core.tween
-import androidx.compose.animation.fadeIn
-import androidx.compose.animation.fadeOut
-import androidx.compose.animation.scaleIn
-import androidx.compose.animation.scaleOut
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Modifier
 import androidx.lifecycle.viewmodel.compose.viewModel
@@ -21,10 +14,13 @@ import com.kyawzinlinn.smssender.ui.add.AddMessageScreenDestination
 import com.kyawzinlinn.smssender.ui.add.SmsNavigationType
 import com.kyawzinlinn.smssender.ui.home.HomeScreen
 import com.kyawzinlinn.smssender.ui.home.HomeScreenDestination
-import com.kyawzinlinn.smssender.ui.home.PermissionsRequestScreen
 import com.kyawzinlinn.smssender.ui.reply.MessageReplyScreen
 import com.kyawzinlinn.smssender.ui.reply.MessageReplyScreenDestination
+import com.kyawzinlinn.smssender.ui.reply.ReplyAddMessageScreen
+import com.kyawzinlinn.smssender.ui.reply.ReplyAddMessageScreenDestination
+import com.kyawzinlinn.smssender.ui.reply.ReplyNavigationType
 import com.kyawzinlinn.smssender.ui.screen.HomeViewModel
+import com.kyawzinlinn.smssender.utils.Transition
 import com.kyawzinlinn.smssender.utils.toMessageObject
 
 @Composable
@@ -33,7 +29,8 @@ fun SmsNavHost(
     homeViewModel: HomeViewModel = viewModel(factory = AppViewModelProvider.Factory),
     modifier: Modifier = Modifier
 ) {
-    BackHandler(enabled = navController.currentBackStackEntry?.destination?.route == HomeScreenDestination.route,
+    BackHandler(
+        enabled = navController.currentBackStackEntry?.destination?.route == HomeScreenDestination.route,
         onBack = {
             navController.popBackStack()
         }
@@ -44,11 +41,17 @@ fun SmsNavHost(
         startDestination = HomeScreenDestination.route,
         modifier = modifier
     ) {
+
         composable(
             route = HomeScreenDestination.route
         ) {
-            homeViewModel.updateFloatingActionButtonStatus(true)
-            HomeScreen(homeViewModel = homeViewModel,
+            homeViewModel.apply {
+                updateFloatingActionButtonStatus(true)
+                updateBottomAppBarStatus(true)
+            }
+
+            HomeScreen(
+                homeViewModel = homeViewModel,
                 navigateToAddScreen = { navigationType, message ->
                     navController.navigate(AddMessageScreenDestination.route + "/$navigationType/$message")
                 }
@@ -56,13 +59,18 @@ fun SmsNavHost(
         }
 
         composable(
-            route = AddMessageScreenDestination.route + "/{navigationType}/{message}"
+            route = AddMessageScreenDestination.route + "/{navigationType}/{message}",
+            enterTransition = { Transition.enter },
+            exitTransition = { Transition.exit }
         ) {
 
-            homeViewModel.updateFloatingActionButtonStatus(false)
+            homeViewModel.apply {
+                updateFloatingActionButtonStatus(false)
+                updateBottomAppBarStatus(false)
+            }
+
             val messageString = it?.arguments!!.getString("message")!!
             val navigationType = it?.arguments!!.getString("navigationType")
-
             val message = messageString.toMessageObject()
 
             AddMessageScreen(
@@ -70,25 +78,53 @@ fun SmsNavHost(
                 smsNavigationType = SmsNavigationType.valueOf(navigationType!!),
                 messageToUpdate = message,
                 navigateUp = {
-                    navController.navigate(HomeScreenDestination.route)
+                    navController.navigateUp()
                 }
             )
         }
 
         composable(
             route = MessageReplyScreenDestination.route,
-            enterTransition = {
-                fadeIn() + scaleIn(
-                    initialScale = 0.5f, animationSpec = spring(
-                        dampingRatio = 0.5f, stiffness = Spring.StiffnessLow
-                    )
-                )
-            }
+            enterTransition = { Transition.enter },
+            exitTransition = { Transition.exit }
         ) {
-
-            homeViewModel.updateFloatingActionButtonStatus(false)
+            homeViewModel.apply {
+                updateFloatingActionButtonStatus(true)
+                updateBottomAppBarStatus(true)
+            }
             MessageReplyScreen(
-                homeViewModel = homeViewModel
+                homeViewModel = homeViewModel,
+                onReplyItemClick = { phoneNumber ->
+                    val navigationType = if (phoneNumber.trim().isEmpty()) ReplyNavigationType.AllNumber else ReplyNavigationType.Update
+                    Log.d("TAG", "isAllNumberS: ${phoneNumber.trim().isEmpty()}  $phoneNumber")
+
+                    navController.navigate(
+                        ReplyAddMessageScreenDestination.route + "/$phoneNumber/${navigationType}"
+                    )
+                }
+            )
+        }
+
+        composable(
+            route = ReplyAddMessageScreenDestination.route + "/{phoneNumber}/{navigationType}",
+            enterTransition = { Transition.enter },
+            exitTransition = { Transition.exit }
+        ) {
+            homeViewModel.apply {
+                updateFloatingActionButtonStatus(true)
+                updateBottomAppBarStatus(false)
+            }
+
+            val phoneNumber = it?.arguments?.getString("phoneNumber")!!
+            val navigationType = it?.arguments?.getString("navigationType")!!
+
+            ReplyAddMessageScreen(
+                homeViewModel = homeViewModel,
+                phoneNumber = phoneNumber.trim(),
+                navigationType = ReplyNavigationType.valueOf(navigationType),
+                navigateUp = {
+                    navController.navigateUp()
+                }
             )
         }
     }

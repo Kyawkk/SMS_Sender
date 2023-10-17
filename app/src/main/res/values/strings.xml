@@ -1,7 +1,13 @@
-<resources>
+<resources xmlns:tools="http://schemas.android.com/tools">
     <string name="app_name">SMS Sender</string>
     <string name="phone_no_placeholder">Enter phone number</string>
     <string name="message_no_placeholder">Enter message</string>
     <string name="add_message">Add Message</string>
     <string name="choose_date_and_time">Choose Date and Time</string>
+    <string name="keyword">Enter keyword</string>
+    <string name="reply">Enter reply</string>
+    <string name="no_messages">No Messages</string>
+    <string name="no_messages_desc" tools:ignore="ExtraTranslation">There is no messages in your list.\nStart creating a new one !</string>
+    <string name="no_reply_messages">No Reply Messages</string>
+    <string name="no_reply_messages_description">There\'s no messages to reply.\nStart creating a new one!</string>
 </resources>

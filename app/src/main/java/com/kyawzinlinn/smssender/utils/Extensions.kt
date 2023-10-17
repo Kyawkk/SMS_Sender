@@ -6,7 +6,7 @@ import androidx.annotation.RequiresApi
 import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.TimePickerState
 import com.google.gson.Gson
-import com.kyawzinlinn.smssender.model.MessageDTO
+import com.kyawzinlinn.smssender.model.MessageDto
 import java.text.SimpleDateFormat
 import java.time.LocalDateTime
 import java.time.format.DateTimeFormatter
@@ -43,9 +43,9 @@ fun String.toFormattedTime(): String{
     }
 }
 
-fun String.toMessageObject(): MessageDTO{
+fun String.toMessageObject(): MessageDto{
     val formattedString = this
-        .replace("MessageDTO(","{")
+        .replace("MessageDto(","{")
         .replace("{", "{\"")
         .replace("}", "\"}")
         .replace(", ", "\", \"")
@@ -53,9 +53,8 @@ fun String.toMessageObject(): MessageDTO{
         .replace("true", "true")
         .replace("false", "false")
         .replace(")","\"}")
-    Log.d("TAG", "toMessageObject: $formattedString")
     val gson = Gson()
-    val messageDTO = gson.fromJson(formattedString,MessageDTO::class.java)
+    val messageDTO = gson.fromJson(formattedString,MessageDto::class.java)
     return if (messageDTO.delayTime.trim().isNullOrEmpty()) messageDTO.copy(delayTime = "Date,Time")
     else messageDTO
 }

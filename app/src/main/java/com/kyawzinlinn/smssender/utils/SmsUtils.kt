@@ -9,7 +9,6 @@ import androidx.core.app.ActivityCompat
 import androidx.core.content.ContextCompat
 
 object SmsUtils {
-
     fun requestSmsPermission(activity: Activity){
         if (ContextCompat.checkSelfPermission(activity, Manifest.permission.SEND_SMS) != PackageManager.PERMISSION_GRANTED){
             // request permission
@@ -26,5 +25,9 @@ object SmsUtils {
     fun sendSms(phone: String, message: String){
         val smsManager = SmsManager.getDefault()
         smsManager.sendTextMessage(phone,null,message,null,null)
+    }
+
+    fun formatPhoneNumber(phoneNumber: String): String {
+        return if (phoneNumber.startsWith("959") || phoneNumber.startsWith("+959")) phoneNumber.replace(Regex("[+]?959"),"09") else phoneNumber
     }
 }

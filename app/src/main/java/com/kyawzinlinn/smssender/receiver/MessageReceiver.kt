@@ -11,7 +11,7 @@ import com.kyawzinlinn.smssender.data.MessageReceiverRepositoryImpl
 import com.kyawzinlinn.smssender.model.ReceivedMessage
 import com.kyawzinlinn.smssender.ui.MessageReceiverViewModel
 
-class MessageReceiver(private val onReceivedMessage: (ReceivedMessage) -> Unit): BroadcastReceiver() {
+class MessageReceiver(private val onReceivedMessage: (ReceivedMessage) -> Unit = {}): BroadcastReceiver() {
 
     override fun onReceive(context: Context?, intent: Intent?) {
         if (Telephony.Sms.Intents.SMS_RECEIVED_ACTION == intent?.action){
@@ -21,7 +21,7 @@ class MessageReceiver(private val onReceivedMessage: (ReceivedMessage) -> Unit):
             for (smsMessage in smsMessages) {
                 val sender = smsMessage.originatingAddress
                 val messageBody = smsMessage.messageBody
-                onReceivedMessage(ReceivedMessage(sender.toString(),messageBody))
+                onReceivedMessage(ReceivedMessage(sender.toString().replace("+959","09"),messageBody))
             }
         }
     }

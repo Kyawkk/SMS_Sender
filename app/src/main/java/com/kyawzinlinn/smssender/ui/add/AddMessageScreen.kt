@@ -44,10 +44,10 @@ import androidx.compose.material3.DropdownMenuItem
 import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.Icon
 import androidx.compose.material3.MaterialTheme
+import androidx.compose.material3.OutlinedTextField
 import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
 import androidx.compose.material3.TextButton
-import androidx.compose.material3.TextField
 import androidx.compose.material3.TimePicker
 import androidx.compose.material3.rememberDatePickerState
 import androidx.compose.material3.rememberTimePickerState
@@ -71,7 +71,7 @@ import androidx.lifecycle.viewmodel.compose.viewModel
 import androidx.wear.compose.material.Checkbox
 import com.kyawzinlinn.smssender.AppViewModelProvider
 import com.kyawzinlinn.smssender.R
-import com.kyawzinlinn.smssender.model.MessageDTO
+import com.kyawzinlinn.smssender.model.MessageDto
 import com.kyawzinlinn.smssender.model.toMessage
 import com.kyawzinlinn.smssender.ui.navigation.NavigationDestination
 import com.kyawzinlinn.smssender.ui.screen.HomeViewModel
@@ -91,6 +91,8 @@ enum class SmsNavigationType {
     ADD, UPDATE
 }
 
+
+
 @RequiresApi(Build.VERSION_CODES.O)
 @Composable
 fun AddMessageScreen(
@@ -98,7 +100,7 @@ fun AddMessageScreen(
     homeViewModel: HomeViewModel = viewModel(factory = AppViewModelProvider.Factory),
     modifier: Modifier = Modifier,
     smsNavigationType: SmsNavigationType = SmsNavigationType.ADD,
-    messageToUpdate: MessageDTO = MessageDTO(0, "", "", "Date,Time", false, false),
+    messageToUpdate: MessageDto = MessageDto(0, "", "", "Date,Time", false, false),
     navigateUp: () -> Unit
 ) {
     homeViewModel.updateTopBarUi(
@@ -109,6 +111,7 @@ fun AddMessageScreen(
         showNavigationIcon = true,
         navigateUp = navigateUp
     )
+
     val uiState by homeViewModel.uiState.collectAsState()
     val phoneNumbers by uiState.phoneNumbers.collectAsState(emptyList())
 
@@ -120,12 +123,13 @@ fun AddMessageScreen(
             }
         )
     }
-    Column (modifier = modifier) {
+
+    Column(modifier = modifier) {
         MessageInputLayout(
             messageToUpdate = messageToUpdate,
             buttonTitle = title,
             onValueChange = {
-                homeViewModel.searchPhoneNumbers(it)
+                //homeViewModel.searchPhoneNumbers(it)
             },
             phoneNumbers = phoneNumbers.map { it.phoneNumber }.distinct(),
             onAddMessageBtnClick = {
@@ -155,11 +159,11 @@ fun AddMessageScreen(
 @RequiresApi(Build.VERSION_CODES.O)
 @Composable
 fun MessageInputLayout(
-    messageToUpdate: MessageDTO,
+    messageToUpdate: MessageDto,
     buttonTitle: String,
     phoneNumbers: List<String>,
     onValueChange: (String) -> Unit,
-    onAddMessageBtnClick: (MessageDTO) -> Unit,
+    onAddMessageBtnClick: (MessageDto) -> Unit,
     modifier: Modifier = Modifier
 ) {
     var phoneNumber by rememberSaveable { mutableStateOf(messageToUpdate.phoneNumber) }
@@ -171,17 +175,9 @@ fun MessageInputLayout(
     var showDatePickerDialog by rememberSaveable { mutableStateOf(false) }
     var showTimePickerDialog by rememberSaveable { mutableStateOf(false) }
 
-    var selectedDate by rememberSaveable {
-        mutableStateOf(
-            messageToUpdate.delayTime.split(",").get(0)
-        )
-    }
+    var selectedDate by rememberSaveable { mutableStateOf(messageToUpdate.delayTime.split(",").get(0)) }
     var isSelectedDateValid by rememberSaveable { mutableStateOf(true) }
-    var selectedTime by rememberSaveable {
-        mutableStateOf(
-            messageToUpdate.delayTime.split(",").get(1)
-        )
-    }
+    var selectedTime by rememberSaveable { mutableStateOf(messageToUpdate.delayTime.split(",").get(1)) }
     var isSelectedTimeValid by rememberSaveable { mutableStateOf(true) }
     var isEveryday by rememberSaveable { mutableStateOf(messageToUpdate.isEveryDay) }
     var isDropdownVisible by rememberSaveable { mutableStateOf(false) }
@@ -193,18 +189,14 @@ fun MessageInputLayout(
             .fillMaxSize(),
         verticalArrangement = Arrangement.spacedBy(12.dp)
     ) {
+
         SmsInputField(
             value = phoneNumber,
+            label = "Phone Number",
             onValueChange = {
                 phoneNumber = it
                 isDropdownVisible = it.isNotEmpty()
                 onValueChange(it)
-            },
-            isDropdownVisible = isDropdownVisible,
-            suggestions = phoneNumbers,
-            onSuggestionClick = {
-                phoneNumber = it
-                isDropdownVisible = false
             },
             onKeyboardActionDone = {
                 isDropdownVisible = false
@@ -221,6 +213,7 @@ fun MessageInputLayout(
         )
         SmsInputField(
             value = message,
+            label = "Message",
             onValueChange = { message = it },
             maxLines = 2,
             leadingIcon = Icons.Default.Email,
@@ -248,9 +241,7 @@ fun MessageInputLayout(
                 isEveryday = !isEveryday
             }
         ) {
-            Checkbox(
-                checked = isEveryday
-            )
+            Checkbox(checked = isEveryday)
             Spacer(Modifier.width(8.dp))
             Text(text = "Everyday")
         }
@@ -283,7 +274,7 @@ fun MessageInputLayout(
 
                 if (isValidPhoneNumber && isValidMessage && (isEveryday || isSelectedDateValid) && isSelectedTimeValid) {
                     onAddMessageBtnClick(
-                        MessageDTO(
+                        MessageDto(
                             0,
                             phoneNumber,
                             message,
@@ -327,45 +318,34 @@ fun PhoneNumberOptionDropdown(
 fun SmsInputField(
     value: String,
     onValueChange: (String) -> Unit,
-    leadingIcon: ImageVector,
-    keyboardOptions: KeyboardOptions,
+    leadingIcon: ImageVector = Icons.Default.Phone,
+    keyboardOptions: KeyboardOptions = KeyboardOptions.Default,
     placeholderId: Int,
-    isDropdownVisible: Boolean = false,
-    suggestions: List<String> = emptyList(),
-    onSuggestionClick: (String) -> Unit = {},
     isValid: Boolean,
+    showLeadingIcon: Boolean = true,
+    label: String,
     onKeyboardActionDone: () -> Unit = {},
     maxLines: Int = 1,
     errorMessage: String = "",
-    modifier: Modifier
+    modifier: Modifier = Modifier
 ) {
     Column(
         modifier = modifier.animateContentSize()
     ) {
-        TextField(
+        OutlinedTextField(
             value = value,
             maxLines = maxLines,
+            label = { Text(label) },
             onValueChange = onValueChange,
             keyboardActions = KeyboardActions(
                 onDone = { onKeyboardActionDone() }
             ),
             modifier = Modifier.fillMaxWidth(),
-            leadingIcon = { Icon(imageVector = leadingIcon, contentDescription = "") },
             keyboardOptions = keyboardOptions,
             placeholder = { Text(text = stringResource(id = placeholderId)) }
         )
 
-        if (suggestions.isNotEmpty()) {
-            PhoneNumberOptionDropdown(
-                isExpanded = isDropdownVisible,
-                phoneNumbers = suggestions,
-                onPhoneNumberClick = onSuggestionClick,
-                modifier = Modifier
-                    .fillMaxWidth()
-                    .padding(horizontal = 16.dp)
-            )
-        }
-
+        Spacer(Modifier.height(4.dp))
         AnimatedVisibility(
             visible = !isValid,
             enter = slideInVertically() + fadeIn(),

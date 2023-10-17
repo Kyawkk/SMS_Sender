@@ -16,5 +16,6 @@ enum class ScreenTitles (val title: String){
     HOME("Home"),
     ADD("Add Message"),
     UPDATE("Update Message"),
-    REPLY("Reply Messages")
+    REPLY("Reply Messages"),
+    REPLY_ADD_MESSAGE("Reply Add Messages")
 }

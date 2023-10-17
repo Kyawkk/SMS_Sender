@@ -6,7 +6,7 @@ import androidx.lifecycle.viewModelScope
 import com.kyawzinlinn.smssender.data.MessageDatabaseRepository
 import com.kyawzinlinn.smssender.data.SmsRepository
 import com.kyawzinlinn.smssender.model.Message
-import com.kyawzinlinn.smssender.model.MessageDTO
+import com.kyawzinlinn.smssender.model.MessageDto
 import com.kyawzinlinn.smssender.model.toMessage
 import com.kyawzinlinn.smssender.ui.home.HomeScreenDestination
 import kotlinx.coroutines.flow.Flow
@@ -51,14 +51,22 @@ class HomeViewModel(
         }
     }
 
-    fun deleteMessage(message: MessageDTO){
+    fun updateBottomAppBarStatus(showBottomAppBar: Boolean){
+        _uiState.update {
+            it.copy (
+                showBottomAppBar = showBottomAppBar
+            )
+        }
+    }
+
+    fun deleteMessage(message: MessageDto){
         cancelMessageSenderWorker(message)
         viewModelScope.launch {
             messageRepository.deleteMessage(message)
         }
     }
 
-    fun updateMessage(messageToUpdate: MessageDTO, oldMessage: MessageDTO){
+    fun updateMessage(messageToUpdate: MessageDto, oldMessage: MessageDto){
         cancelMessageSenderWorker(oldMessage)
         Log.d("TAG", "updateMessage: $messageToUpdate $oldMessage")
         smsRepository.sendSms(messageToUpdate.toMessage())
@@ -67,7 +75,7 @@ class HomeViewModel(
         }
     }
 
-    fun toggleWorkStatus(isEnabled: Boolean, message: MessageDTO){
+    fun toggleWorkStatus(isEnabled: Boolean, message: MessageDto){
         viewModelScope.launch {
             messageRepository.updateMessage(message.copy(isActive = isEnabled))
         }
@@ -75,7 +83,7 @@ class HomeViewModel(
         else cancelMessageSenderWorker(message)
     }
 
-    private fun cancelMessageSenderWorker(message: MessageDTO){
+    private fun cancelMessageSenderWorker(message: MessageDto){
         smsRepository.cancelSms(message.message + message.delayTime)
     }
 
@@ -98,12 +106,13 @@ class HomeViewModel(
     }
 
     data class SmsUiState(
-        val messages: Flow<List<MessageDTO>> = emptyFlow(),
-        val phoneNumbers: Flow<List<MessageDTO>> = emptyFlow(),
+        val messages: Flow<List<MessageDto>> = emptyFlow(),
+        val phoneNumbers: Flow<List<MessageDto>> = emptyFlow(),
         val query: String = "",
         val title: String = HomeScreenDestination.title,
         val showNavigationIcon: Boolean = false,
         val showFloatingActionButton: Boolean = true,
+        val showBottomAppBar: Boolean = false,
         val navigateUp: () -> Unit = {}
     )
 }

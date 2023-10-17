@@ -6,6 +6,7 @@ import androidx.lifecycle.viewmodel.initializer
 import androidx.lifecycle.viewmodel.viewModelFactory
 import com.kyawzinlinn.smssender.ui.MessageReceiverViewModel
 import com.kyawzinlinn.smssender.ui.add.AddMessageViewModel
+import com.kyawzinlinn.smssender.ui.reply.RepliedMessageViewModel
 import com.kyawzinlinn.smssender.ui.screen.HomeViewModel
 
 object AppViewModelProvider {
@@ -20,6 +21,10 @@ object AppViewModelProvider {
 
         initializer {
             MessageReceiverViewModel(smsSenderApplication().container.messageReceiverRepository)
+        }
+
+        initializer {
+            RepliedMessageViewModel(smsSenderApplication().container.repliedMessagesRepository)
         }
     }
 }

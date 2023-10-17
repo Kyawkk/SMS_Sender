@@ -9,11 +9,9 @@
 
 package com.kyawzinlinn.smssender.ui.screen
 
-import android.util.Log
 import androidx.compose.animation.AnimatedContent
 import androidx.compose.animation.AnimatedVisibility
 import androidx.compose.animation.ExperimentalAnimationApi
-import androidx.compose.animation.core.AnimationSpec
 import androidx.compose.animation.core.tween
 import androidx.compose.animation.fadeIn
 import androidx.compose.animation.fadeOut
@@ -22,7 +20,7 @@ import androidx.compose.animation.scaleOut
 import androidx.compose.animation.slideInVertically
 import androidx.compose.animation.slideOutVertically
 import androidx.compose.animation.togetherWith
-import androidx.compose.foundation.layout.Box
+import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.padding
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Add
@@ -50,22 +48,24 @@ import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.runtime.setValue
-import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.compose.ui.text.font.FontWeight
+import androidx.compose.ui.text.style.TextAlign
 import androidx.lifecycle.viewmodel.compose.viewModel
 import androidx.navigation.NavHostController
 import androidx.navigation.compose.currentBackStackEntryAsState
 import androidx.navigation.compose.rememberNavController
 import com.google.accompanist.permissions.ExperimentalPermissionsApi
 import com.kyawzinlinn.smssender.AppViewModelProvider
-import com.kyawzinlinn.smssender.model.MessageDTO
+import com.kyawzinlinn.smssender.model.MessageDto
 import com.kyawzinlinn.smssender.ui.add.AddMessageScreenDestination
 import com.kyawzinlinn.smssender.ui.add.SmsNavigationType
 import com.kyawzinlinn.smssender.ui.home.HomeScreenDestination
 import com.kyawzinlinn.smssender.ui.navigation.SmsNavHost
 import com.kyawzinlinn.smssender.ui.reply.MessageReplyScreenDestination
+import com.kyawzinlinn.smssender.ui.reply.ReplyAddMessageScreenDestination
+import com.kyawzinlinn.smssender.ui.reply.ReplyNavigationType
 import com.kyawzinlinn.smssender.ui.theme.productSansFontFamily
 import com.kyawzinlinn.smssender.utils.ScreenTitles
 
@@ -77,11 +77,14 @@ fun SmsApp(
     val uiState by viewModel.uiState.collectAsState()
     var showFloatingActionButton by rememberSaveable { mutableStateOf(false) }
     var showNavigateIcon by rememberSaveable { mutableStateOf(false) }
+    var showBottomAppBar by rememberSaveable { mutableStateOf(false) }
     var title by rememberSaveable { mutableStateOf(HomeScreenDestination.title) }
+    var currentRoute = navController.currentDestination?.route
 
-    LaunchedEffect(uiState.showFloatingActionButton, uiState.showNavigationIcon, uiState.title) {
+    LaunchedEffect(uiState.showFloatingActionButton, uiState.showNavigationIcon, uiState.title, uiState.showBottomAppBar) {
         showFloatingActionButton = uiState.showFloatingActionButton
         showNavigateIcon = uiState.showNavigationIcon
+        showBottomAppBar = uiState.showBottomAppBar
         title = uiState.title
     }
 
@@ -90,18 +93,29 @@ fun SmsApp(
             title = title, showNavigateIcon = showNavigateIcon, navigateUp = uiState.navigateUp
         )
     }, floatingActionButton = {
-        SmsFloatingActionButton(showFloatingActionButton,
+        SmsFloatingActionButton(
+            showFloatingActionButton && showBottomAppBar,
             navigateToAddScreen = { type, messageDto ->
-                navController.navigate(AddMessageScreenDestination.route + "/$type/$messageDto")
+                when(currentRoute) {
+                    HomeScreenDestination.route -> navController.navigate(AddMessageScreenDestination.route + "/$type/$messageDto")
+                    MessageReplyScreenDestination.route -> navController.navigate(
+                        ReplyAddMessageScreenDestination.route + "/ /${ReplyNavigationType.Add}"
+                    )
+                }
             })
     }, bottomBar = {
         AnimatedVisibility(
-            visible = !showNavigateIcon,
-            enter = fadeIn() + slideInVertically(animationSpec = tween(400)),
-            exit = fadeOut() + slideOutVertically(animationSpec = tween(400))
+            visible = showBottomAppBar,
+            enter = fadeIn() + slideInVertically(
+                animationSpec = tween(200),
+                initialOffsetY = {100}
+            ),
+            exit = fadeOut() + slideOutVertically(
+                animationSpec = tween(200),
+                targetOffsetY = {100}
+            )
         ) {
-            SmsAppBottomNavigation(
-                navController = navController,
+            SmsAppBottomNavigation(navController = navController,
                 onNavigationItemSelected = { screen ->
                     when (screen) {
                         ScreenTitles.HOME.title -> {
@@ -127,16 +141,18 @@ enum class NavigateIconType {
 
 @Composable
 fun SmsFloatingActionButton(
-    visible: Boolean, navigateToAddScreen: (SmsNavigationType, MessageDTO) -> Unit
+    visible: Boolean,
+    navigateToAddScreen: (SmsNavigationType, MessageDto) -> Unit
 ) {
     AnimatedVisibility(
         visible = visible,
         enter = scaleIn(animationSpec = tween(300), initialScale = 0.8f) + fadeIn(),
         exit = scaleOut(animationSpec = tween(300), targetScale = 0.8f) + fadeOut()
     ) {
-        FloatingActionButton(onClick = {
+        FloatingActionButton(
+            onClick = {
             navigateToAddScreen(
-                SmsNavigationType.ADD, MessageDTO(0, "", "", "", false, false)
+                SmsNavigationType.ADD, MessageDto(0, "", "", "", false, false)
             )
         }) {
             Icon(imageVector = Icons.Default.Add, contentDescription = "")
@@ -153,8 +169,7 @@ fun SmsAppTopBar(
 ) {
     CenterAlignedTopAppBar(title = {
         AnimatedContent(targetState = title, transitionSpec = {
-            fadeIn() + slideInVertically(
-                animationSpec = tween(400),
+            fadeIn() + slideInVertically(animationSpec = tween(400),
                 initialOffsetY = { it }) togetherWith fadeOut(
                 animationSpec = tween(
                     200
@@ -163,25 +178,34 @@ fun SmsAppTopBar(
                 -it
             }
         }) { newTitle ->
-            Box(contentAlignment = Alignment.Center) {
-                Text(
-                    text = newTitle,
-                    fontFamily = productSansFontFamily,
-                    fontWeight = FontWeight.Medium
-                )
-            }
+            Text(
+                text = newTitle,
+                fontFamily = productSansFontFamily,
+                fontWeight = FontWeight.Medium,
+                textAlign = TextAlign.Center,
+                modifier = Modifier.fillMaxWidth()
+            )
         }
     }, colors = TopAppBarDefaults.mediumTopAppBarColors(
         containerColor = MaterialTheme.colorScheme.primary,
         titleContentColor = MaterialTheme.colorScheme.onPrimary
     ), navigationIcon = {
-        if (showNavigateIcon) {
-            IconButton(onClick = navigateUp) {
+        IconButton(
+            onClick = navigateUp,
+            enabled = showNavigateIcon
+        ) {
+            AnimatedVisibility(
+                visible = showNavigateIcon,
+                enter = fadeIn(),
+                exit = fadeOut()
+            ){
                 Icon(
                     imageVector = when (navigateIconType) {
                         NavigateIconType.NAVIGATE_BACK -> Icons.Default.ArrowBack
                         NavigateIconType.ADD_SCREEN -> Icons.Default.Clear
-                    }, contentDescription = "", tint = MaterialTheme.colorScheme.onPrimary
+                    },
+                    contentDescription = "",
+                    tint = MaterialTheme.colorScheme.onPrimary
                 )
             }
         }

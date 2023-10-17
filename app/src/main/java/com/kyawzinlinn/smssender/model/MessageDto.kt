@@ -1,14 +1,12 @@
 package com.kyawzinlinn.smssender.model
 
 import androidx.room.ColumnInfo
-import androidx.room.Dao
 import androidx.room.Entity
 import androidx.room.PrimaryKey
 import java.io.Serializable
-import java.time.LocalDateTime
 
 @Entity("messages")
-data class MessageDTO(
+data class MessageDto(
     @PrimaryKey(autoGenerate = true)
     val id: Int,
     @ColumnInfo("phone_number") val phoneNumber: String,
@@ -18,7 +16,7 @@ data class MessageDTO(
     @ColumnInfo("is_active") val isActive: Boolean
 ): Serializable
 
-fun MessageDTO.toMessage(): Message{
+fun MessageDto.toMessage(): Message{
     return Message(
         phoneNumber,
         message,
