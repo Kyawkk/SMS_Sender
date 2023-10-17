@@ -58,7 +58,7 @@ import androidx.navigation.compose.currentBackStackEntryAsState
 import androidx.navigation.compose.rememberNavController
 import com.google.accompanist.permissions.ExperimentalPermissionsApi
 import com.kyawzinlinn.smssender.AppViewModelProvider
-import com.kyawzinlinn.smssender.model.MessageDto
+import com.kyawzinlinn.smssender.domain.model.MessageDto
 import com.kyawzinlinn.smssender.ui.add.AddMessageScreenDestination
 import com.kyawzinlinn.smssender.ui.add.SmsNavigationType
 import com.kyawzinlinn.smssender.ui.home.HomeScreenDestination

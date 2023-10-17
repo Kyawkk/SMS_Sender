@@ -1,4 +1,4 @@
-package com.kyawzinlinn.smssender.model
+package com.kyawzinlinn.smssender.domain.model
 
 import androidx.room.ColumnInfo
 import androidx.room.Entity
@@ -16,7 +16,7 @@ data class MessageDto(
     @ColumnInfo("is_active") val isActive: Boolean
 ): Serializable
 
-fun MessageDto.toMessage(): Message{
+fun MessageDto.toMessage(): Message {
     return Message(
         phoneNumber,
         message,

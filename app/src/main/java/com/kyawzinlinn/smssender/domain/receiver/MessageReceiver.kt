@@ -1,18 +1,12 @@
-package com.kyawzinlinn.smssender.receiver
+package com.kyawzinlinn.smssender.domain.receiver
 
 import android.content.BroadcastReceiver
 import android.content.Context
 import android.content.Intent
 import android.provider.Telephony
-import android.telephony.SmsMessage
-import android.util.Log
-import com.kyawzinlinn.smssender.data.MessageReceiverRepository
-import com.kyawzinlinn.smssender.data.MessageReceiverRepositoryImpl
-import com.kyawzinlinn.smssender.model.ReceivedMessage
-import com.kyawzinlinn.smssender.ui.MessageReceiverViewModel
+import com.kyawzinlinn.smssender.domain.model.ReceivedMessage
 
 class MessageReceiver(private val onReceivedMessage: (ReceivedMessage) -> Unit = {}): BroadcastReceiver() {
-
     override fun onReceive(context: Context?, intent: Intent?) {
         if (Telephony.Sms.Intents.SMS_RECEIVED_ACTION == intent?.action){
 

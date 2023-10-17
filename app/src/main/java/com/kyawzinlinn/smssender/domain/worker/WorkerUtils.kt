@@ -1,4 +1,4 @@
-package com.kyawzinlinn.smssender.worker
+package com.kyawzinlinn.smssender.domain.worker
 
 import android.app.NotificationChannel
 import android.app.NotificationManager

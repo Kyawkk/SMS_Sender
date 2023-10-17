@@ -6,8 +6,8 @@ import android.provider.Telephony
 import android.util.Log
 import com.kyawzinlinn.smssender.di.AppContainer
 import com.kyawzinlinn.smssender.di.AppDataContainer
-import com.kyawzinlinn.smssender.model.ReceivedMessage
-import com.kyawzinlinn.smssender.receiver.MessageReceiver
+import com.kyawzinlinn.smssender.domain.model.ReceivedMessage
+import com.kyawzinlinn.smssender.domain.receiver.MessageReceiver
 import com.kyawzinlinn.smssender.utils.SmsUtils
 import kotlinx.coroutines.GlobalScope
 import kotlinx.coroutines.flow.map

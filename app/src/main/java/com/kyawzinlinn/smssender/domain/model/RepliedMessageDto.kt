@@ -1,4 +1,4 @@
-package com.kyawzinlinn.smssender.model
+package com.kyawzinlinn.smssender.domain.model
 
 import androidx.room.ColumnInfo
 import androidx.room.Entity
@@ -18,4 +18,8 @@ fun List<RepliedMessageDto>.replaceAllPhoneNumbersAndEnabledAllNumbers(phoneNumb
     return map {
         it.copy(phoneNumber = phoneNumber, isAllNumbers = allNumberEnabled)
     }
+}
+
+fun List<RepliedMessageDto>.toRepliedMessage(): Map<String, List<RepliedMessageDto>> {
+    return this.groupBy { it.phoneNumber }
 }

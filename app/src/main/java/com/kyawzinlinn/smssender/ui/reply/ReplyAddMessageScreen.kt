@@ -1,6 +1,5 @@
 package com.kyawzinlinn.smssender.ui.reply
 
-import android.util.Log
 import androidx.compose.animation.AnimatedVisibility
 import androidx.compose.animation.animateContentSize
 import androidx.compose.animation.core.Spring
@@ -23,7 +22,6 @@ import androidx.compose.material.icons.filled.Add
 import androidx.compose.material.icons.filled.AddBox
 import androidx.compose.material.icons.filled.Delete
 import androidx.compose.material.icons.filled.Edit
-import androidx.compose.material.icons.filled.Phone
 import androidx.compose.material3.AlertDialog
 import androidx.compose.material3.Checkbox
 import androidx.compose.material3.FilledTonalButton
@@ -49,10 +47,9 @@ import androidx.lifecycle.viewmodel.compose.viewModel
 import androidx.wear.compose.material.Text
 import com.kyawzinlinn.smssender.AppViewModelProvider
 import com.kyawzinlinn.smssender.R
-import com.kyawzinlinn.smssender.data.DataSource
-import com.kyawzinlinn.smssender.model.RepliedMessageDto
-import com.kyawzinlinn.smssender.model.replaceAllPhoneNumbersAndEnabledAllNumbers
-import com.kyawzinlinn.smssender.ui.add.SmsInputField
+import com.kyawzinlinn.smssender.domain.model.RepliedMessageDto
+import com.kyawzinlinn.smssender.domain.model.replaceAllPhoneNumbersAndEnabledAllNumbers
+import com.kyawzinlinn.smssender.ui.components.SmsInputField
 import com.kyawzinlinn.smssender.ui.navigation.NavigationDestination
 import com.kyawzinlinn.smssender.ui.screen.HomeViewModel
 import com.kyawzinlinn.smssender.utils.ScreenTitles
@@ -60,11 +57,11 @@ import com.kyawzinlinn.smssender.utils.SmsUtils
 
 object ReplyAddMessageScreenDestination : NavigationDestination {
     override val route: String = "Reply Add Messages"
-    override val title: String = ScreenTitles.REPLY_ADD_MESSAGE.title
+    override val title: String = ScreenTitles.ADD_REPLY_MESSAGE.title
 }
 
 enum class ReplyNavigationType {
-    Add,Update,AllNumber
+    Add, Update, AllNumber
 }
 
 @Composable
@@ -77,7 +74,13 @@ fun ReplyAddMessageScreen(
 ) {
     homeViewModel.updateFloatingActionButtonStatus(false)
     homeViewModel.updateTopBarUi(
-        ReplyAddMessageScreenDestination.title, true, navigateUp = navigateUp
+        title = when (navigationType) {
+            ReplyNavigationType.Add -> ScreenTitles.ADD_REPLY_MESSAGE.title
+            ReplyNavigationType.Update -> ScreenTitles.UPDATE_REPLY_MESSAGE.title
+            ReplyNavigationType.AllNumber -> ScreenTitles.UPDATE_REPLY_MESSAGE.title
+        },
+        showNavigationIcon = true,
+        navigateUp = navigateUp
     )
 
     ReplyAddMessageContent(
@@ -103,8 +106,10 @@ fun ReplyAddMessageContent(
     val uiState by repliedMessageViewModel.uiState.collectAsState()
     val repliedMessages by uiState.repliedMessagesByPhoneNumber.collectAsState(emptyList())
 
-    LaunchedEffect(Unit){
-        if (navigationType != ReplyNavigationType.Add) repliedMessageViewModel.getPhoneNumbersByPhoneNumber(phoneNumber)
+    LaunchedEffect(Unit) {
+        if (navigationType != ReplyNavigationType.Add) repliedMessageViewModel.getPhoneNumbersByPhoneNumber(
+            phoneNumber
+        )
     }
 
     Column(
@@ -123,7 +128,6 @@ fun ReplyAddMessageContent(
                     phoneNumber = it
                 },
                 label = "Phone Number",
-                leadingIcon = Icons.Default.Phone,
                 keyboardOptions = KeyboardOptions.Default.copy(
                     keyboardType = KeyboardType.Number, imeAction = ImeAction.Next
                 ),
@@ -189,7 +193,7 @@ fun RepliedFieldList(
     var initialKeyword by rememberSaveable { mutableStateOf("") }
     var initialReply by rememberSaveable { mutableStateOf("") }
 
-    LaunchedEffect(repliedMessages){
+    LaunchedEffect(repliedMessages) {
         messages = repliedMessages
     }
 
@@ -365,7 +369,6 @@ fun AddRepliedMessageDialog(
 
                 SmsInputField(
                     value = keyword,
-                    showLeadingIcon = false,
                     label = "Keyword",
                     errorMessage = "Keyword must not be empty!",
                     onValueChange = {
@@ -377,7 +380,6 @@ fun AddRepliedMessageDialog(
 
                 SmsInputField(
                     value = reply,
-                    showLeadingIcon = false,
                     errorMessage = "Reply must not be empty!",
                     onValueChange = {
                         reply = it

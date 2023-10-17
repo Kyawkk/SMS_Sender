@@ -1,10 +1,9 @@
 package com.kyawzinlinn.smssender.ui.reply
 
-import android.util.Log
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
-import com.kyawzinlinn.smssender.data.RepliedMessagesRepository
-import com.kyawzinlinn.smssender.model.RepliedMessageDto
+import com.kyawzinlinn.smssender.data.local.repositories.RepliedMessagesRepository
+import com.kyawzinlinn.smssender.domain.model.RepliedMessageDto
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.MutableStateFlow

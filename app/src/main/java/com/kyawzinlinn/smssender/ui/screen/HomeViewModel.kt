@@ -1,13 +1,12 @@
 package com.kyawzinlinn.smssender.ui.screen
 
-import android.util.Log
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
-import com.kyawzinlinn.smssender.data.MessageDatabaseRepository
-import com.kyawzinlinn.smssender.data.SmsRepository
-import com.kyawzinlinn.smssender.model.Message
-import com.kyawzinlinn.smssender.model.MessageDto
-import com.kyawzinlinn.smssender.model.toMessage
+import com.kyawzinlinn.smssender.data.local.repositories.MessageDatabaseRepository
+import com.kyawzinlinn.smssender.data.local.repositories.SmsRepository
+import com.kyawzinlinn.smssender.domain.model.Message
+import com.kyawzinlinn.smssender.domain.model.MessageDto
+import com.kyawzinlinn.smssender.domain.model.toMessage
 import com.kyawzinlinn.smssender.ui.home.HomeScreenDestination
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.MutableStateFlow
@@ -68,7 +67,6 @@ class HomeViewModel(
 
     fun updateMessage(messageToUpdate: MessageDto, oldMessage: MessageDto){
         cancelMessageSenderWorker(oldMessage)
-        Log.d("TAG", "updateMessage: $messageToUpdate $oldMessage")
         smsRepository.sendSms(messageToUpdate.toMessage())
         viewModelScope.launch {
             messageRepository.updateMessage(messageToUpdate)
@@ -88,18 +86,10 @@ class HomeViewModel(
     }
 
     private fun getAllMessages() {
-        _uiState.update {
-            it.copy(
-                messages = messageRepository.getAllMessages()
-            )
-        }
-    }
-
-    fun searchPhoneNumbers(query: String){
         viewModelScope.launch {
             _uiState.update {
                 it.copy(
-                    phoneNumbers = messageRepository.searchPhoneNumbers(query)
+                    messages = messageRepository.getAllMessages()
                 )
             }
         }

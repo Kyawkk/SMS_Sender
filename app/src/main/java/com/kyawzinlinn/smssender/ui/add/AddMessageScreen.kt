@@ -29,11 +29,7 @@ import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.shape.RoundedCornerShape
-import androidx.compose.foundation.text.KeyboardActions
 import androidx.compose.foundation.text.KeyboardOptions
-import androidx.compose.material.icons.Icons
-import androidx.compose.material.icons.filled.Email
-import androidx.compose.material.icons.filled.Phone
 import androidx.compose.material3.Button
 import androidx.compose.material3.Card
 import androidx.compose.material3.DatePicker
@@ -44,7 +40,6 @@ import androidx.compose.material3.DropdownMenuItem
 import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.Icon
 import androidx.compose.material3.MaterialTheme
-import androidx.compose.material3.OutlinedTextField
 import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
 import androidx.compose.material3.TextButton
@@ -52,16 +47,13 @@ import androidx.compose.material3.TimePicker
 import androidx.compose.material3.rememberDatePickerState
 import androidx.compose.material3.rememberTimePickerState
 import androidx.compose.runtime.Composable
-import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
-import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.compose.ui.res.painterResource
-import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.input.ImeAction
 import androidx.compose.ui.text.input.KeyboardType
 import androidx.compose.ui.unit.dp
@@ -71,8 +63,9 @@ import androidx.lifecycle.viewmodel.compose.viewModel
 import androidx.wear.compose.material.Checkbox
 import com.kyawzinlinn.smssender.AppViewModelProvider
 import com.kyawzinlinn.smssender.R
-import com.kyawzinlinn.smssender.model.MessageDto
-import com.kyawzinlinn.smssender.model.toMessage
+import com.kyawzinlinn.smssender.domain.model.MessageDto
+import com.kyawzinlinn.smssender.domain.model.toMessage
+import com.kyawzinlinn.smssender.ui.components.SmsInputField
 import com.kyawzinlinn.smssender.ui.navigation.NavigationDestination
 import com.kyawzinlinn.smssender.ui.screen.HomeViewModel
 import com.kyawzinlinn.smssender.utils.DateValidationUtils
@@ -97,7 +90,7 @@ enum class SmsNavigationType {
 @Composable
 fun AddMessageScreen(
     addMessageViewModel: AddMessageViewModel = viewModel(factory = AppViewModelProvider.Factory),
-    homeViewModel: HomeViewModel = viewModel(factory = AppViewModelProvider.Factory),
+    homeViewModel: HomeViewModel,
     modifier: Modifier = Modifier,
     smsNavigationType: SmsNavigationType = SmsNavigationType.ADD,
     messageToUpdate: MessageDto = MessageDto(0, "", "", "Date,Time", false, false),
@@ -112,9 +105,6 @@ fun AddMessageScreen(
         navigateUp = navigateUp
     )
 
-    val uiState by homeViewModel.uiState.collectAsState()
-    val phoneNumbers by uiState.phoneNumbers.collectAsState(emptyList())
-
     var title by rememberSaveable {
         mutableStateOf(
             when (smsNavigationType) {
@@ -128,10 +118,6 @@ fun AddMessageScreen(
         MessageInputLayout(
             messageToUpdate = messageToUpdate,
             buttonTitle = title,
-            onValueChange = {
-                //homeViewModel.searchPhoneNumbers(it)
-            },
-            phoneNumbers = phoneNumbers.map { it.phoneNumber }.distinct(),
             onAddMessageBtnClick = {
                 when (smsNavigationType) {
 
@@ -161,8 +147,6 @@ fun AddMessageScreen(
 fun MessageInputLayout(
     messageToUpdate: MessageDto,
     buttonTitle: String,
-    phoneNumbers: List<String>,
-    onValueChange: (String) -> Unit,
     onAddMessageBtnClick: (MessageDto) -> Unit,
     modifier: Modifier = Modifier
 ) {
@@ -196,13 +180,11 @@ fun MessageInputLayout(
             onValueChange = {
                 phoneNumber = it
                 isDropdownVisible = it.isNotEmpty()
-                onValueChange(it)
             },
             onKeyboardActionDone = {
                 isDropdownVisible = false
             },
             modifier = Modifier.fillMaxWidth(),
-            leadingIcon = Icons.Default.Phone,
             keyboardOptions = KeyboardOptions.Default.copy(
                 keyboardType = KeyboardType.Number,
                 imeAction = ImeAction.Next
@@ -216,7 +198,6 @@ fun MessageInputLayout(
             label = "Message",
             onValueChange = { message = it },
             maxLines = 2,
-            leadingIcon = Icons.Default.Email,
             modifier = Modifier.fillMaxWidth(),
             keyboardOptions = KeyboardOptions.Default.copy(
                 keyboardType = KeyboardType.Text
@@ -310,48 +291,6 @@ fun PhoneNumberOptionDropdown(
                 text = { Text(it) },
                 onClick = { onPhoneNumberClick(it) }
             )
-        }
-    }
-}
-
-@Composable
-fun SmsInputField(
-    value: String,
-    onValueChange: (String) -> Unit,
-    leadingIcon: ImageVector = Icons.Default.Phone,
-    keyboardOptions: KeyboardOptions = KeyboardOptions.Default,
-    placeholderId: Int,
-    isValid: Boolean,
-    showLeadingIcon: Boolean = true,
-    label: String,
-    onKeyboardActionDone: () -> Unit = {},
-    maxLines: Int = 1,
-    errorMessage: String = "",
-    modifier: Modifier = Modifier
-) {
-    Column(
-        modifier = modifier.animateContentSize()
-    ) {
-        OutlinedTextField(
-            value = value,
-            maxLines = maxLines,
-            label = { Text(label) },
-            onValueChange = onValueChange,
-            keyboardActions = KeyboardActions(
-                onDone = { onKeyboardActionDone() }
-            ),
-            modifier = Modifier.fillMaxWidth(),
-            keyboardOptions = keyboardOptions,
-            placeholder = { Text(text = stringResource(id = placeholderId)) }
-        )
-
-        Spacer(Modifier.height(4.dp))
-        AnimatedVisibility(
-            visible = !isValid,
-            enter = slideInVertically() + fadeIn(),
-            exit = slideOutVertically() + fadeOut()
-        ) {
-            Text(errorMessage, color = MaterialTheme.colorScheme.error)
         }
     }
 }

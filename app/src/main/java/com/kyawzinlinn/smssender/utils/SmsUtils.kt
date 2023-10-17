@@ -9,18 +9,6 @@ import androidx.core.app.ActivityCompat
 import androidx.core.content.ContextCompat
 
 object SmsUtils {
-    fun requestSmsPermission(activity: Activity){
-        if (ContextCompat.checkSelfPermission(activity, Manifest.permission.SEND_SMS) != PackageManager.PERMISSION_GRANTED){
-            // request permission
-            ActivityCompat.requestPermissions(
-                activity,
-                arrayOf(Manifest.permission.SEND_SMS),
-                SMS_REQUEST_CODE
-            )
-        }
-    }
-
-    fun isPermissionGranted(activity: Activity) = ContextCompat.checkSelfPermission(activity, Manifest.permission.SEND_SMS) == PackageManager.PERMISSION_GRANTED
 
     fun sendSms(phone: String, message: String){
         val smsManager = SmsManager.getDefault()

@@ -1,9 +1,8 @@
-package com.kyawzinlinn.smssender.worker
+package com.kyawzinlinn.smssender.domain.worker
 
 import android.content.Context
 import androidx.work.CoroutineWorker
 import androidx.work.WorkerParameters
-import com.kyawzinlinn.smssender.model.Message
 import com.kyawzinlinn.smssender.utils.KEY_IS_TIME_OVER
 import com.kyawzinlinn.smssender.utils.KEY_MESSAGE
 import com.kyawzinlinn.smssender.utils.KEY_PHONE_NUMBER
@@ -22,7 +21,6 @@ class SmsSenderWorker (private val context: Context, params: WorkerParameters) :
             }
             Result.success()
         }catch (e: Exception){
-
             Result.failure()
         }
     }

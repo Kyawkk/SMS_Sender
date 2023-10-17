@@ -1,6 +1,6 @@
-package com.kyawzinlinn.smssender.data
+package com.kyawzinlinn.smssender.data.local.repositories
 
-import com.kyawzinlinn.smssender.model.RepliedMessageDto
+import com.kyawzinlinn.smssender.domain.model.RepliedMessageDto
 import kotlinx.coroutines.flow.Flow
 
 interface RepliedMessagesRepository {

@@ -1,4 +1,4 @@
-package com.kyawzinlinn.smssender.data
+package com.kyawzinlinn.smssender.data.local.dao
 
 import androidx.room.Dao
 import androidx.room.Delete
@@ -6,7 +6,7 @@ import androidx.room.Insert
 import androidx.room.OnConflictStrategy
 import androidx.room.Query
 import androidx.room.Update
-import com.kyawzinlinn.smssender.model.MessageDto
+import com.kyawzinlinn.smssender.domain.model.MessageDto
 import kotlinx.coroutines.flow.Flow
 
 @Dao

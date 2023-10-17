@@ -1,11 +1,13 @@
-package com.kyawzinlinn.smssender.data
+package com.kyawzinlinn.smssender.data.local.database
 
 import android.content.Context
 import androidx.room.Database
 import androidx.room.Room
 import androidx.room.RoomDatabase
-import com.kyawzinlinn.smssender.model.MessageDto
-import com.kyawzinlinn.smssender.model.RepliedMessageDto
+import com.kyawzinlinn.smssender.data.local.dao.MessageDao
+import com.kyawzinlinn.smssender.data.local.dao.RepliedMessageDao
+import com.kyawzinlinn.smssender.domain.model.MessageDto
+import com.kyawzinlinn.smssender.domain.model.RepliedMessageDto
 
 @Database(entities = [MessageDto::class, RepliedMessageDto::class], version = 2, exportSchema = false)
 abstract class MessageDatabase : RoomDatabase() {
@@ -16,7 +18,7 @@ abstract class MessageDatabase : RoomDatabase() {
         @Volatile
         private var INSTANCE: MessageDatabase? = null
 
-        fun getDatabase(context: Context): MessageDatabase{
+        fun getDatabase(context: Context): MessageDatabase {
             return INSTANCE ?: synchronized(this){
                 Room.databaseBuilder(context, MessageDatabase::class.java, "message_database")
                     .fallbackToDestructiveMigration()

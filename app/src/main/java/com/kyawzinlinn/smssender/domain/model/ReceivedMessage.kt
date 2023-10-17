@@ -1,4 +1,4 @@
-package com.kyawzinlinn.smssender.model
+package com.kyawzinlinn.smssender.domain.model
 
 data class ReceivedMessage(
     val phoneNumber: String,

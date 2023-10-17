@@ -1,10 +1,10 @@
-package com.kyawzinlinn.smssender.data
+package com.kyawzinlinn.smssender.data.local.dao
 
 import androidx.room.Dao
 import androidx.room.Insert
 import androidx.room.OnConflictStrategy
 import androidx.room.Query
-import com.kyawzinlinn.smssender.model.RepliedMessageDto
+import com.kyawzinlinn.smssender.domain.model.RepliedMessageDto
 import kotlinx.coroutines.flow.Flow
 
 @Dao

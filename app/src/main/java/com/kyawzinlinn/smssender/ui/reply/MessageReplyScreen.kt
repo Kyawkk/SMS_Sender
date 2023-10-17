@@ -24,8 +24,8 @@ import androidx.lifecycle.viewmodel.compose.viewModel
 import androidx.wear.compose.material.Text
 import com.kyawzinlinn.smssender.AppViewModelProvider
 import com.kyawzinlinn.smssender.R
-import com.kyawzinlinn.smssender.model.RepliedMessageDto
-import com.kyawzinlinn.smssender.model.toRepliedMessage
+import com.kyawzinlinn.smssender.domain.model.RepliedMessageDto
+import com.kyawzinlinn.smssender.domain.model.toRepliedMessage
 import com.kyawzinlinn.smssender.ui.components.NoMessagesLayout
 import com.kyawzinlinn.smssender.ui.navigation.NavigationDestination
 import com.kyawzinlinn.smssender.ui.screen.HomeViewModel

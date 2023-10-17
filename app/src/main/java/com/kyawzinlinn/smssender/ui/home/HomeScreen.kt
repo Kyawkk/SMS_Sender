@@ -10,11 +10,8 @@ package com.kyawzinlinn.smssender.ui.home
 
 import android.Manifest
 import android.content.Intent
-import android.content.IntentFilter
 import android.net.Uri
 import android.provider.Settings
-import android.provider.Telephony
-import android.util.Log
 import androidx.compose.animation.AnimatedVisibility
 import androidx.compose.animation.animateContentSize
 import androidx.compose.animation.core.Spring
@@ -25,6 +22,7 @@ import androidx.compose.animation.fadeOut
 import androidx.compose.animation.scaleIn
 import androidx.compose.animation.scaleOut
 import androidx.compose.foundation.ExperimentalFoundationApi
+import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
@@ -56,7 +54,6 @@ import androidx.compose.material3.SnackbarResult
 import androidx.compose.material3.Switch
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
-import androidx.compose.runtime.DisposableEffect
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
@@ -66,20 +63,22 @@ import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.compose.ui.platform.LocalContext
+import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import com.google.accompanist.permissions.ExperimentalPermissionsApi
 import com.google.accompanist.permissions.isGranted
 import com.google.accompanist.permissions.rememberPermissionState
 import com.kyawzinlinn.smssender.R
-import com.kyawzinlinn.smssender.model.MessageDto
-import com.kyawzinlinn.smssender.receiver.MessageReceiver
+import com.kyawzinlinn.smssender.domain.model.MessageDto
 import com.kyawzinlinn.smssender.ui.add.SmsNavigationType
 import com.kyawzinlinn.smssender.ui.components.NoMessagesLayout
 import com.kyawzinlinn.smssender.ui.navigation.NavigationDestination
 import com.kyawzinlinn.smssender.ui.screen.HomeViewModel
 import com.kyawzinlinn.smssender.utils.ScreenTitles
+import com.kyawzinlinn.smssender.utils.Transition
 import kotlinx.coroutines.launch
 
 object HomeScreenDestination : NavigationDestination {
@@ -98,17 +97,15 @@ fun HomeScreen(
     val messages by uiState.messages.collectAsState(initial = emptyList())
     val scope = rememberCoroutineScope()
     val snackbarHostState = remember { SnackbarHostState() }
-    var selectedScreen by remember { mutableStateOf(HomeScreenDestination.title) }
     var showEmptyScreen by remember { mutableStateOf(false) }
 
     val smsPermissionState =
         rememberPermissionState(permission = Manifest.permission.SEND_SMS, onPermissionResult = {})
     val readSmsPermissionState =
         rememberPermissionState(permission = Manifest.permission.READ_SMS, onPermissionResult = {})
-    val notificationPermissionState = rememberPermissionState(
-        permission = Manifest.permission.POST_NOTIFICATIONS,
-        onPermissionResult = {}
-    )
+    val notificationPermissionState =
+        rememberPermissionState(permission = Manifest.permission.POST_NOTIFICATIONS,
+            onPermissionResult = {})
 
     val allPermissionGranted =
         smsPermissionState.status.isGranted && notificationPermissionState.status.isGranted && readSmsPermissionState.status.isGranted
@@ -116,84 +113,73 @@ fun HomeScreen(
     homeViewModel.updateTopBarUi(HomeScreenDestination.title, false)
     homeViewModel.updateBottomAppBarStatus(allPermissionGranted)
 
-    LaunchedEffect(messages){
+    LaunchedEffect(messages) {
         showEmptyScreen = messages.isEmpty() && allPermissionGranted
     }
 
-    Column(modifier = modifier) {
-        when (selectedScreen) {
-            ScreenTitles.HOME.title -> Column(
-                modifier = Modifier
-                    .fillMaxSize()
-                    .animateContentSize()
+    Column(
+        modifier = modifier
+            .fillMaxSize()
+            .animateContentSize()
+    ) {
+
+        AnimatedVisibility(showEmptyScreen) {
+            NoMessagesLayout(
+                titleId = R.string.no_messages, descriptionId = R.string.no_messages_desc
+            )
+        }
+
+        AnimatedVisibility(
+            visible = !showEmptyScreen,
+            enter = fadeIn(),
+            exit = fadeOut()
+        ) {
+            MessageContentList(messages = messages, onMessageItemClicked = {
+
+            }, toggleSmsSenderWork = { isActive, message ->
+                homeViewModel.toggleWorkStatus(isActive, message)
+            }, onDeleteItemClick = {
+                homeViewModel.deleteMessage(it)
+            }, onUpdateItemClick = {
+                navigateToAddScreen(SmsNavigationType.UPDATE, it)
+            })
+        }
+
+        AnimatedVisibility(
+            !allPermissionGranted,
+            enter = Transition.enter,
+            exit = Transition.exit
+        ) {
+            Box(
+                modifier = Modifier.fillMaxSize(), contentAlignment = Alignment.Center
             ) {
-
-                if (showEmptyScreen){
-                    NoMessagesLayout(
-                        titleId = R.string.no_messages,
-                        descriptionId = R.string.no_messages_desc
-                    )
-                }else {
-                    MessageContentList(messages = messages, onMessageItemClicked = {
-
-                    }, toggleSmsSenderWork = { isActive, message ->
-                        homeViewModel.toggleWorkStatus(isActive, message)
-                    }, onDeleteItemClick = {
-                        homeViewModel.deleteMessage(it)
-                    }, onUpdateItemClick = {
-                        navigateToAddScreen(SmsNavigationType.UPDATE, it)
-                    }
-                    )
-                }
-
-                /*AnimatedVisibility(
-                    visible = allPermissionGranted, enter = fadeIn(), exit = fadeOut()
-                ) {
-
-                }*/
-
-                AnimatedVisibility(
-                    !allPermissionGranted,
-                    enter = scaleIn(animationSpec = tween(300), initialScale = 0.8f) + fadeIn(),
-                    exit = scaleOut(animationSpec = tween(300), targetScale = 0.8f) + fadeOut()
-                ) {
-                    Box(
-                        modifier = Modifier.fillMaxSize(), contentAlignment = Alignment.Center
-                    ) {
-                        PermissionsRequestScreen(smsPermissionState = smsPermissionState,
-                            notificationPermissionState = notificationPermissionState,
-                            readSmsPermissionState = readSmsPermissionState,
-                            onShouldShowRationale = {
-                                scope.launch {
-                                    val result = snackbarHostState.showSnackbar(
-                                        message = it,
-                                        actionLabel = "Open Settings",
-                                        duration = SnackbarDuration.Indefinite
-                                    )
-                                    when (result) {
-                                        SnackbarResult.ActionPerformed -> {
-                                            val intent =
-                                                Intent(Settings.ACTION_APPLICATION_DETAILS_SETTINGS).apply {
-                                                    data = Uri.fromParts(
-                                                        "package", context.packageName, null
-                                                    )
-                                                }
-                                            context.startActivity(intent)
+                PermissionsRequestScreen(smsPermissionState = smsPermissionState,
+                    notificationPermissionState = notificationPermissionState,
+                    readSmsPermissionState = readSmsPermissionState,
+                    onShouldShowRationale = {
+                        scope.launch {
+                            val result = snackbarHostState.showSnackbar(
+                                message = it,
+                                actionLabel = "Open Settings",
+                                duration = SnackbarDuration.Indefinite
+                            )
+                            when (result) {
+                                SnackbarResult.ActionPerformed -> {
+                                    val intent =
+                                        Intent(Settings.ACTION_APPLICATION_DETAILS_SETTINGS).apply {
+                                            data = Uri.fromParts(
+                                                "package", context.packageName, null
+                                            )
                                         }
+                                    context.startActivity(intent)
+                                }
 
-                                        SnackbarResult.Dismissed -> {
+                                SnackbarResult.Dismissed -> {
 
-                                        }
-                                    }
                                 }
                             }
-                        )
-                    }
-                }
-            }
-
-            ScreenTitles.REPLY.title -> {
-
+                        }
+                    })
             }
         }
     }
@@ -246,8 +232,7 @@ private fun MessageListItem(
         Column(
             modifier = Modifier.animateContentSize(
                 animationSpec = spring(
-                    dampingRatio = Spring.DampingRatioLowBouncy,
-                    stiffness = Spring.StiffnessLow
+                    dampingRatio = Spring.DampingRatioLowBouncy, stiffness = Spring.StiffnessLow
                 )
             )
         ) {
@@ -256,26 +241,32 @@ private fun MessageListItem(
                     .fillMaxWidth()
                     .padding(horizontal = 12.dp),
                 verticalAlignment = Alignment.CenterVertically,
-                horizontalArrangement = Arrangement.SpaceBetween
             ) {
                 Column(
-                    modifier = Modifier.padding(vertical = 12.dp),
-                    verticalArrangement = Arrangement.spacedBy(4.dp)
+                    modifier = Modifier
+                        .fillMaxHeight()
+                        .weight(0.7f),
+                    verticalArrangement = Arrangement.spacedBy(8.dp)
                 ) {
                     Text(
                         text = messageDTO.phoneNumber, style = MaterialTheme.typography.titleMedium
                     )
-                    Text(text = messageDTO.message, style = MaterialTheme.typography.bodyMedium)
-                    Spacer(modifier = Modifier.height(2.dp))
+                    Text(
+                        text = messageDTO.message,
+                        style = MaterialTheme.typography.bodyMedium,
+                        maxLines = 1,
+                        overflow = TextOverflow.Ellipsis
+                    )
                     Text(
                         text = if (messageDTO.isEveryDay) messageDTO.delayTime.split(",")
                             .get(1) + " | Everyday"
                         else messageDTO.delayTime, style = MaterialTheme.typography.bodySmall
                     )
                 }
-
                 Column(
-                    modifier = Modifier.fillMaxHeight(),
+                    modifier = Modifier
+                        .fillMaxHeight()
+                        .weight(0.3f),
                     verticalArrangement = Arrangement.SpaceBetween,
                     horizontalAlignment = Alignment.End
                 ) {
