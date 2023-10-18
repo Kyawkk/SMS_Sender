@@ -1,11 +1,7 @@
 package com.kyawzinlinn.smssender.ui.reply
 
-import androidx.compose.animation.AnimatedVisibility
 import androidx.compose.animation.animateContentSize
-import androidx.compose.animation.fadeIn
-import androidx.compose.animation.fadeOut
 import androidx.compose.foundation.layout.Arrangement
-import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.foundation.layout.fillMaxSize
@@ -21,14 +17,13 @@ import androidx.compose.runtime.setValue
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.unit.dp
 import androidx.lifecycle.viewmodel.compose.viewModel
-import androidx.wear.compose.material.Text
 import com.kyawzinlinn.smssender.AppViewModelProvider
 import com.kyawzinlinn.smssender.R
-import com.kyawzinlinn.smssender.domain.model.RepliedMessageDto
-import com.kyawzinlinn.smssender.domain.model.toRepliedMessage
+import com.kyawzinlinn.smssender.data.model.RepliedMessageDto
+import com.kyawzinlinn.smssender.data.model.toRepliedMessage
 import com.kyawzinlinn.smssender.ui.components.NoMessagesLayout
 import com.kyawzinlinn.smssender.ui.navigation.NavigationDestination
-import com.kyawzinlinn.smssender.ui.screen.HomeViewModel
+import com.kyawzinlinn.smssender.ui.SharedUiViewModel
 import com.kyawzinlinn.smssender.utils.ScreenTitles
 
 object MessageReplyScreenDestination : NavigationDestination {
@@ -38,14 +33,14 @@ object MessageReplyScreenDestination : NavigationDestination {
 
 @Composable
 fun MessageReplyScreen(
-    homeViewModel: HomeViewModel,
+    sharedUiViewModel: SharedUiViewModel,
     onReplyItemClick: (String) -> Unit,
-    repliedMessageViewModel: RepliedMessageViewModel = viewModel(factory = AppViewModelProvider.Factory),
+    autoRepliedMessagesViewModel: AutoRepliedMessagesViewModel = viewModel(factory = AppViewModelProvider.Factory),
     modifier: Modifier = Modifier
 ) {
-    homeViewModel.updateTopBarUi(MessageReplyScreenDestination.title, false)
+    sharedUiViewModel.updateTopBarUi(MessageReplyScreenDestination.title, false)
 
-    val uiState by repliedMessageViewModel.uiState.collectAsState()
+    val uiState by autoRepliedMessagesViewModel.uiState.collectAsState()
     val messages by uiState.repliedMessages.collectAsState(initial = emptyList())
     var showEmptyMessage by rememberSaveable { mutableStateOf(messages.isEmpty()) }
 

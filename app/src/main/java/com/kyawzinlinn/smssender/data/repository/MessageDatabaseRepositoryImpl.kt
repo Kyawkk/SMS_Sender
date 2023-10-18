@@ -1,11 +1,11 @@
 package com.kyawzinlinn.smssender.data.repository
 
-import com.kyawzinlinn.smssender.data.local.dao.MessageDao
+import com.kyawzinlinn.smssender.data.local.dao.ScheduledMessagesDao
 import com.kyawzinlinn.smssender.data.local.repositories.MessageDatabaseRepository
-import com.kyawzinlinn.smssender.domain.model.MessageDto
+import com.kyawzinlinn.smssender.data.model.MessageDto
 import kotlinx.coroutines.flow.Flow
 
-class MessageDatabaseRepositoryImpl (private val messageDao: MessageDao) :
+class MessageDatabaseRepositoryImpl (private val messageDao: ScheduledMessagesDao) :
     MessageDatabaseRepository {
     override fun getAllMessages(): Flow<List<MessageDto>> = messageDao.getAllMessages()
 

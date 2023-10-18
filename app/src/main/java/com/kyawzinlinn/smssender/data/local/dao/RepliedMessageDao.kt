@@ -4,7 +4,7 @@ import androidx.room.Dao
 import androidx.room.Insert
 import androidx.room.OnConflictStrategy
 import androidx.room.Query
-import com.kyawzinlinn.smssender.domain.model.RepliedMessageDto
+import com.kyawzinlinn.smssender.data.model.RepliedMessageDto
 import kotlinx.coroutines.flow.Flow
 
 @Dao

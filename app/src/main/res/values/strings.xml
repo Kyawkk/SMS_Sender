@@ -10,4 +10,5 @@
     <string name="no_messages_desc" tools:ignore="ExtraTranslation">There is no messages in your list.\nStart creating a new one !</string>
     <string name="no_reply_messages">No Reply Messages</string>
     <string name="no_reply_messages_description">There\'s no messages to reply.\nStart creating a new one!</string>
+    <string name="enable_auto_start_setting" translatable="false">To enable background tasks, please enable the \'Auto Start\' setting for this app in your device\'s settings.</string>
 </resources>

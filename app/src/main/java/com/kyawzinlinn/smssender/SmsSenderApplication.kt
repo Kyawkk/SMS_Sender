@@ -6,11 +6,10 @@ import android.provider.Telephony
 import android.util.Log
 import com.kyawzinlinn.smssender.di.AppContainer
 import com.kyawzinlinn.smssender.di.AppDataContainer
-import com.kyawzinlinn.smssender.domain.model.ReceivedMessage
+import com.kyawzinlinn.smssender.domain.model.IncomingMessage
 import com.kyawzinlinn.smssender.domain.receiver.MessageReceiver
 import com.kyawzinlinn.smssender.utils.SmsUtils
 import kotlinx.coroutines.GlobalScope
-import kotlinx.coroutines.flow.map
 import kotlinx.coroutines.launch
 
 class SmsSenderApplication : Application () {
@@ -34,13 +33,13 @@ class SmsSenderApplication : Application () {
         registerReceiver(messageReceiver,intent)
     }
 
-    private suspend fun sendAutoReply(receivedMessage: ReceivedMessage) {
-        Log.d("TAG", "sendAutoReply: ${receivedMessage.phoneNumber}")
-        container.repliedMessagesRepository.getRepliedMessagesByPhoneNumber(receivedMessage.phoneNumber).collect { messages ->
+    private suspend fun sendAutoReply(incomingMessage: IncomingMessage) {
+        Log.d("TAG", "sendAutoReply: ${incomingMessage.phoneNumber}")
+        container.autoRepliedMessagesRepository.getRepliedMessagesByPhoneNumber(incomingMessage.phoneNumber).collect { messages ->
             Log.d("TAG", "sendAutoReply: $messages")
             messages.forEach {
-                Log.d("TAG", "sendAutoReply: ${receivedMessage.message.contains(it.incomingMessage)}")
-                if (receivedMessage.message.contains(it.incomingMessage)) SmsUtils.sendSms(receivedMessage.phoneNumber,it.repliedMessage)
+                Log.d("TAG", "sendAutoReply: ${incomingMessage.message.contains(it.incomingMessage)}")
+                if (incomingMessage.message.contains(it.incomingMessage)) SmsUtils.sendSms(incomingMessage.phoneNumber,it.repliedMessage)
             }
         }
     }

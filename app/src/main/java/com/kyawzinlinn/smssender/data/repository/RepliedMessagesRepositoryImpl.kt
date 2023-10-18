@@ -1,13 +1,13 @@
 package com.kyawzinlinn.smssender.data.repository
 
 import com.kyawzinlinn.smssender.data.local.dao.RepliedMessageDao
-import com.kyawzinlinn.smssender.data.local.repositories.RepliedMessagesRepository
-import com.kyawzinlinn.smssender.domain.model.RepliedMessageDto
+import com.kyawzinlinn.smssender.data.local.repositories.AutoRepliedMessagesRepository
+import com.kyawzinlinn.smssender.data.model.RepliedMessageDto
 import kotlinx.coroutines.flow.Flow
 
 class RepliedMessagesRepositoryImpl (
     private val repliedMessageDao: RepliedMessageDao
-): RepliedMessagesRepository {
+): AutoRepliedMessagesRepository {
     override suspend fun addRepliedMessage(repliedMessages: List<RepliedMessageDto>) = repliedMessageDao.addRepliedMessage(repliedMessages)
 
     override fun getRepliedMessagesByPhoneNumber(phoneNumber: String): Flow<List<RepliedMessageDto>> = repliedMessageDao.getRepliedMessages(phoneNumber)

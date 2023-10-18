@@ -4,23 +4,23 @@ import android.content.Context
 import com.kyawzinlinn.smssender.data.local.database.MessageDatabase
 import com.kyawzinlinn.smssender.data.local.repositories.MessageDatabaseRepository
 import com.kyawzinlinn.smssender.data.repository.MessageDatabaseRepositoryImpl
-import com.kyawzinlinn.smssender.data.local.repositories.RepliedMessagesRepository
+import com.kyawzinlinn.smssender.data.local.repositories.AutoRepliedMessagesRepository
 import com.kyawzinlinn.smssender.data.repository.RepliedMessagesRepositoryImpl
-import com.kyawzinlinn.smssender.data.local.repositories.SmsRepository
-import com.kyawzinlinn.smssender.data.repository.WorkerSmsRepository
+import com.kyawzinlinn.smssender.data.local.repositories.ScheduledMessageWorkerRepository
+import com.kyawzinlinn.smssender.data.repository.ScheduledMessageWorkerRepositoryImpl
 
 interface AppContainer {
-    val smsRepository: SmsRepository
+    val scheduledMessageWorkerRepository: ScheduledMessageWorkerRepository
     val messageDatabaseRepository: MessageDatabaseRepository
-    val repliedMessagesRepository: RepliedMessagesRepository
+    val autoRepliedMessagesRepository: AutoRepliedMessagesRepository
 }
 
 class AppDataContainer (context: Context): AppContainer{
-    override val smsRepository: SmsRepository = WorkerSmsRepository(context)
+    override val scheduledMessageWorkerRepository: ScheduledMessageWorkerRepository = ScheduledMessageWorkerRepositoryImpl(context)
     override val messageDatabaseRepository: MessageDatabaseRepository by lazy {
-        MessageDatabaseRepositoryImpl(MessageDatabase.getDatabase(context).messageDao())
+        MessageDatabaseRepositoryImpl(MessageDatabase.getDatabase(context).scheduledMessagesDao())
     }
-    override val repliedMessagesRepository: RepliedMessagesRepository by lazy {
+    override val autoRepliedMessagesRepository: AutoRepliedMessagesRepository by lazy {
         RepliedMessagesRepositoryImpl(MessageDatabase.getDatabase(context).repliedMessageDao())
     }
 }

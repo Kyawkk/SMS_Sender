@@ -1,7 +1,8 @@
 @file:OptIn(
     ExperimentalMaterial3Api::class,
     ExperimentalMaterial3Api::class,
-    ExperimentalMaterial3Api::class, ExperimentalMaterial3Api::class
+    ExperimentalMaterial3Api::class, ExperimentalMaterial3Api::class,
+    ExperimentalMaterial3Api::class
 )
 
 package com.kyawzinlinn.smssender.ui.add
@@ -10,6 +11,8 @@ import android.os.Build
 import androidx.annotation.RequiresApi
 import androidx.compose.animation.AnimatedVisibility
 import androidx.compose.animation.animateContentSize
+import androidx.compose.animation.core.Spring
+import androidx.compose.animation.core.spring
 import androidx.compose.animation.fadeIn
 import androidx.compose.animation.fadeOut
 import androidx.compose.animation.slideInVertically
@@ -63,11 +66,12 @@ import androidx.lifecycle.viewmodel.compose.viewModel
 import androidx.wear.compose.material.Checkbox
 import com.kyawzinlinn.smssender.AppViewModelProvider
 import com.kyawzinlinn.smssender.R
-import com.kyawzinlinn.smssender.domain.model.MessageDto
-import com.kyawzinlinn.smssender.domain.model.toMessage
+import com.kyawzinlinn.smssender.data.model.MessageDto
+import com.kyawzinlinn.smssender.data.model.toMessage
 import com.kyawzinlinn.smssender.ui.components.SmsInputField
 import com.kyawzinlinn.smssender.ui.navigation.NavigationDestination
-import com.kyawzinlinn.smssender.ui.screen.HomeViewModel
+import com.kyawzinlinn.smssender.ui.home.ScheduledMessagesViewModel
+import com.kyawzinlinn.smssender.ui.SharedUiViewModel
 import com.kyawzinlinn.smssender.utils.DateValidationUtils
 import com.kyawzinlinn.smssender.utils.ScreenTitles
 import com.kyawzinlinn.smssender.utils.toFormattedTime
@@ -89,14 +93,14 @@ enum class SmsNavigationType {
 @RequiresApi(Build.VERSION_CODES.O)
 @Composable
 fun AddMessageScreen(
-    addMessageViewModel: AddMessageViewModel = viewModel(factory = AppViewModelProvider.Factory),
-    homeViewModel: HomeViewModel,
+    scheduledMessagesViewModel: ScheduledMessagesViewModel = viewModel(factory = AppViewModelProvider.Factory),
+    sharedUiViewModel: SharedUiViewModel,
     modifier: Modifier = Modifier,
     smsNavigationType: SmsNavigationType = SmsNavigationType.ADD,
     messageToUpdate: MessageDto = MessageDto(0, "", "", "Date,Time", false, false),
     navigateUp: () -> Unit
 ) {
-    homeViewModel.updateTopBarUi(
+    sharedUiViewModel.updateTopBarUi(
         title = when (smsNavigationType) {
             SmsNavigationType.ADD -> ScreenTitles.ADD.title
             SmsNavigationType.UPDATE -> ScreenTitles.UPDATE.title
@@ -122,14 +126,14 @@ fun AddMessageScreen(
                 when (smsNavigationType) {
 
                     SmsNavigationType.ADD -> {
-                        homeViewModel.sendMessage(it.toMessage())
-                        addMessageViewModel.addMessage(it)
+                        scheduledMessagesViewModel.sendMessage(it.toMessage())
+                        scheduledMessagesViewModel.addMessage(it)
                         navigateUp()
                     }
 
                     SmsNavigationType.UPDATE -> {
                         if ((messageToUpdate.message + messageToUpdate.delayTime) != (it.message + it.delayTime)) {
-                            homeViewModel.updateMessage(
+                            scheduledMessagesViewModel.updateMessage(
                                 messageToUpdate = it.copy(id = messageToUpdate.id),
                                 oldMessage = messageToUpdate
                             )
@@ -308,7 +312,14 @@ fun DateAndTimeInputLayout(
 ) {
     Row(
         modifier = modifier
-            .fillMaxWidth(),
+            .fillMaxWidth()
+            .animateContentSize(
+                spring(
+                    dampingRatio = Spring.DampingRatioLowBouncy,
+                    stiffness = Spring.StiffnessLow
+                )
+            )
+        ,
         horizontalArrangement = Arrangement.SpaceBetween
     ) {
         if (!isEveryday) {

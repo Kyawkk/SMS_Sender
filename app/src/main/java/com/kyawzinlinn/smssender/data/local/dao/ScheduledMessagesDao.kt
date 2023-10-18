@@ -6,11 +6,11 @@ import androidx.room.Insert
 import androidx.room.OnConflictStrategy
 import androidx.room.Query
 import androidx.room.Update
-import com.kyawzinlinn.smssender.domain.model.MessageDto
+import com.kyawzinlinn.smssender.data.model.MessageDto
 import kotlinx.coroutines.flow.Flow
 
 @Dao
-interface MessageDao {
+interface ScheduledMessagesDao {
     @Query("select * from messages")
     fun getAllMessages(): Flow<List<MessageDto>>
 

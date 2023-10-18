@@ -4,22 +4,21 @@ import androidx.lifecycle.ViewModelProvider.AndroidViewModelFactory.Companion.AP
 import androidx.lifecycle.viewmodel.CreationExtras
 import androidx.lifecycle.viewmodel.initializer
 import androidx.lifecycle.viewmodel.viewModelFactory
-import com.kyawzinlinn.smssender.ui.add.AddMessageViewModel
-import com.kyawzinlinn.smssender.ui.reply.RepliedMessageViewModel
-import com.kyawzinlinn.smssender.ui.screen.HomeViewModel
+import com.kyawzinlinn.smssender.ui.reply.AutoRepliedMessagesViewModel
+import com.kyawzinlinn.smssender.ui.home.ScheduledMessagesViewModel
+import com.kyawzinlinn.smssender.ui.SharedUiViewModel
 
 object AppViewModelProvider {
     val Factory = viewModelFactory {
         initializer {
-            HomeViewModel(smsSenderApplication().container.smsRepository, smsSenderApplication().container.messageDatabaseRepository)
+            SharedUiViewModel()
+        }
+        initializer {
+            ScheduledMessagesViewModel(smsSenderApplication().container.scheduledMessageWorkerRepository, smsSenderApplication().container.messageDatabaseRepository)
         }
 
         initializer {
-            AddMessageViewModel(smsSenderApplication().container.messageDatabaseRepository)
-        }
-
-        initializer {
-            RepliedMessageViewModel(smsSenderApplication().container.repliedMessagesRepository)
+            AutoRepliedMessagesViewModel(smsSenderApplication().container.autoRepliedMessagesRepository)
         }
     }
 }

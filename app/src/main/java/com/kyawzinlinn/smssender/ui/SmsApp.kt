@@ -7,7 +7,7 @@
     ExperimentalAnimationApi::class
 )
 
-package com.kyawzinlinn.smssender.ui.screen
+package com.kyawzinlinn.smssender.ui
 
 import androidx.compose.animation.AnimatedContent
 import androidx.compose.animation.AnimatedVisibility
@@ -58,28 +58,30 @@ import androidx.navigation.compose.currentBackStackEntryAsState
 import androidx.navigation.compose.rememberNavController
 import com.google.accompanist.permissions.ExperimentalPermissionsApi
 import com.kyawzinlinn.smssender.AppViewModelProvider
-import com.kyawzinlinn.smssender.domain.model.MessageDto
+import com.kyawzinlinn.smssender.data.model.MessageDto
 import com.kyawzinlinn.smssender.ui.add.AddMessageScreenDestination
 import com.kyawzinlinn.smssender.ui.add.SmsNavigationType
 import com.kyawzinlinn.smssender.ui.home.HomeScreenDestination
 import com.kyawzinlinn.smssender.ui.navigation.SmsNavHost
 import com.kyawzinlinn.smssender.ui.reply.MessageReplyScreenDestination
-import com.kyawzinlinn.smssender.ui.reply.ReplyAddMessageScreenDestination
-import com.kyawzinlinn.smssender.ui.reply.ReplyNavigationType
+import com.kyawzinlinn.smssender.ui.add.ReplyAddMessageScreenDestination
+import com.kyawzinlinn.smssender.ui.add.ReplyNavigationType
+import com.kyawzinlinn.smssender.ui.components.EnableAutoStartSettingDialog
 import com.kyawzinlinn.smssender.ui.theme.productSansFontFamily
 import com.kyawzinlinn.smssender.utils.ScreenTitles
 
 @Composable
 fun SmsApp(
-    viewModel: HomeViewModel = viewModel(factory = AppViewModelProvider.Factory),
+    sharedUiViewModel: SharedUiViewModel = viewModel(factory = AppViewModelProvider.Factory),
     navController: NavHostController = rememberNavController()
 ) {
-    val uiState by viewModel.uiState.collectAsState()
+    val uiState by sharedUiViewModel.uiState.collectAsState()
     var showFloatingActionButton by rememberSaveable { mutableStateOf(false) }
     var showNavigateIcon by rememberSaveable { mutableStateOf(false) }
     var showBottomAppBar by rememberSaveable { mutableStateOf(false) }
     var title by rememberSaveable { mutableStateOf(HomeScreenDestination.title) }
     var currentRoute = navController.currentDestination?.route
+    var showAutoStartSettingConfirmationDialog by rememberSaveable { mutableStateOf(true) }
 
     LaunchedEffect(uiState.showFloatingActionButton, uiState.showNavigationIcon, uiState.title, uiState.showBottomAppBar) {
         showFloatingActionButton = uiState.showFloatingActionButton
@@ -129,8 +131,13 @@ fun SmsApp(
                 })
         }
     }) {
+        if (showAutoStartSettingConfirmationDialog) {
+            EnableAutoStartSettingDialog(onDismissRequest = {})
+        }
         SmsNavHost(
-            navController = navController, modifier = Modifier.padding(it)
+            sharedUiViewModel = sharedUiViewModel,
+            navController = navController,
+            modifier = Modifier.padding(it)
         )
     }
 }

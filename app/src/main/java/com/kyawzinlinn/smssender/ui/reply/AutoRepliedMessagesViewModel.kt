@@ -2,8 +2,8 @@ package com.kyawzinlinn.smssender.ui.reply
 
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
-import com.kyawzinlinn.smssender.data.local.repositories.RepliedMessagesRepository
-import com.kyawzinlinn.smssender.domain.model.RepliedMessageDto
+import com.kyawzinlinn.smssender.data.local.repositories.AutoRepliedMessagesRepository
+import com.kyawzinlinn.smssender.data.model.RepliedMessageDto
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.MutableStateFlow
@@ -13,8 +13,8 @@ import kotlinx.coroutines.flow.emptyFlow
 import kotlinx.coroutines.flow.update
 import kotlinx.coroutines.launch
 
-class RepliedMessageViewModel (
-    private val repliedMessagesRepository: RepliedMessagesRepository
+class AutoRepliedMessagesViewModel (
+    private val autoRepliedMessagesRepository: AutoRepliedMessagesRepository
 ): ViewModel() {
     private val _uiState = MutableStateFlow(RepliedMessageUiState())
     val uiState: StateFlow<RepliedMessageUiState> = _uiState.asStateFlow()
@@ -26,7 +26,7 @@ class RepliedMessageViewModel (
     private fun getRepliedMessages(){
         _uiState.update {
             it.copy(
-                repliedMessages = repliedMessagesRepository.getAllRepliedMessages()
+                repliedMessages = autoRepliedMessagesRepository.getAllRepliedMessages()
             )
         }
     }
@@ -34,15 +34,15 @@ class RepliedMessageViewModel (
     fun getPhoneNumbersByPhoneNumber(phoneNumber: String) {
         _uiState.update {
             it.copy(
-                repliedMessagesByPhoneNumber = repliedMessagesRepository.getRepliedMessagesByPhoneNumber(phoneNumber)
+                repliedMessagesByPhoneNumber = autoRepliedMessagesRepository.getRepliedMessagesByPhoneNumber(phoneNumber)
             )
         }
     }
 
     fun addRepliedMessages(phoneNumber: String, repliedMessages: List<RepliedMessageDto>){
         viewModelScope.launch (Dispatchers.IO) {
-            repliedMessagesRepository.deleteRepliedMessagesByPhoneNumber(phoneNumber)
-            repliedMessagesRepository.addRepliedMessage(repliedMessages)
+            autoRepliedMessagesRepository.deleteRepliedMessagesByPhoneNumber(phoneNumber)
+            autoRepliedMessagesRepository.addRepliedMessage(repliedMessages)
         }
     }
 

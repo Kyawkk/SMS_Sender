@@ -3,6 +3,7 @@
     ExperimentalMaterial3Api::class,
     ExperimentalFoundationApi::class,
     ExperimentalPermissionsApi::class,
+    ExperimentalPermissionsApi::class, ExperimentalPermissionsApi::class,
     ExperimentalPermissionsApi::class
 )
 
@@ -16,13 +17,9 @@ import androidx.compose.animation.AnimatedVisibility
 import androidx.compose.animation.animateContentSize
 import androidx.compose.animation.core.Spring
 import androidx.compose.animation.core.spring
-import androidx.compose.animation.core.tween
 import androidx.compose.animation.fadeIn
 import androidx.compose.animation.fadeOut
-import androidx.compose.animation.scaleIn
-import androidx.compose.animation.scaleOut
 import androidx.compose.foundation.ExperimentalFoundationApi
-import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
@@ -60,23 +57,25 @@ import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.rememberCoroutineScope
+import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
-import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
+import androidx.lifecycle.viewmodel.compose.viewModel
 import com.google.accompanist.permissions.ExperimentalPermissionsApi
 import com.google.accompanist.permissions.isGranted
 import com.google.accompanist.permissions.rememberPermissionState
+import com.kyawzinlinn.smssender.AppViewModelProvider
 import com.kyawzinlinn.smssender.R
-import com.kyawzinlinn.smssender.domain.model.MessageDto
+import com.kyawzinlinn.smssender.data.model.MessageDto
+import com.kyawzinlinn.smssender.ui.SharedUiViewModel
 import com.kyawzinlinn.smssender.ui.add.SmsNavigationType
 import com.kyawzinlinn.smssender.ui.components.NoMessagesLayout
 import com.kyawzinlinn.smssender.ui.navigation.NavigationDestination
-import com.kyawzinlinn.smssender.ui.screen.HomeViewModel
 import com.kyawzinlinn.smssender.utils.ScreenTitles
 import com.kyawzinlinn.smssender.utils.Transition
 import kotlinx.coroutines.launch
@@ -88,12 +87,13 @@ object HomeScreenDestination : NavigationDestination {
 
 @Composable
 fun HomeScreen(
-    homeViewModel: HomeViewModel,
+    scheduledMessagesViewModel: ScheduledMessagesViewModel = viewModel(factory = AppViewModelProvider.Factory),
+    sharedUiViewModel: SharedUiViewModel,
     navigateToAddScreen: (SmsNavigationType, MessageDto) -> Unit,
     modifier: Modifier = Modifier
 ) {
     val context = LocalContext.current
-    val uiState by homeViewModel.uiState.collectAsState()
+    val uiState by scheduledMessagesViewModel.uiState.collectAsState()
     val messages by uiState.messages.collectAsState(initial = emptyList())
     val scope = rememberCoroutineScope()
     val snackbarHostState = remember { SnackbarHostState() }
@@ -110,8 +110,8 @@ fun HomeScreen(
     val allPermissionGranted =
         smsPermissionState.status.isGranted && notificationPermissionState.status.isGranted && readSmsPermissionState.status.isGranted
 
-    homeViewModel.updateTopBarUi(HomeScreenDestination.title, false)
-    homeViewModel.updateBottomAppBarStatus(allPermissionGranted)
+    sharedUiViewModel.updateTopBarUi(HomeScreenDestination.title, false)
+    sharedUiViewModel.updateBottomAppBarStatus(allPermissionGranted)
 
     LaunchedEffect(messages) {
         showEmptyScreen = messages.isEmpty() && allPermissionGranted
@@ -137,9 +137,9 @@ fun HomeScreen(
             MessageContentList(messages = messages, onMessageItemClicked = {
 
             }, toggleSmsSenderWork = { isActive, message ->
-                homeViewModel.toggleWorkStatus(isActive, message)
+                scheduledMessagesViewModel.toggleWorkStatus(isActive, message)
             }, onDeleteItemClick = {
-                homeViewModel.deleteMessage(it)
+                scheduledMessagesViewModel.deleteMessage(it)
             }, onUpdateItemClick = {
                 navigateToAddScreen(SmsNavigationType.UPDATE, it)
             })

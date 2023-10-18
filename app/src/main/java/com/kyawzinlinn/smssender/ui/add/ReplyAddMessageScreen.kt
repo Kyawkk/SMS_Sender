@@ -1,4 +1,4 @@
-package com.kyawzinlinn.smssender.ui.reply
+package com.kyawzinlinn.smssender.ui.add
 
 import androidx.compose.animation.AnimatedVisibility
 import androidx.compose.animation.animateContentSize
@@ -47,11 +47,12 @@ import androidx.lifecycle.viewmodel.compose.viewModel
 import androidx.wear.compose.material.Text
 import com.kyawzinlinn.smssender.AppViewModelProvider
 import com.kyawzinlinn.smssender.R
-import com.kyawzinlinn.smssender.domain.model.RepliedMessageDto
-import com.kyawzinlinn.smssender.domain.model.replaceAllPhoneNumbersAndEnabledAllNumbers
+import com.kyawzinlinn.smssender.data.model.RepliedMessageDto
+import com.kyawzinlinn.smssender.data.model.replaceAllPhoneNumbersAndEnabledAllNumbers
 import com.kyawzinlinn.smssender.ui.components.SmsInputField
 import com.kyawzinlinn.smssender.ui.navigation.NavigationDestination
-import com.kyawzinlinn.smssender.ui.screen.HomeViewModel
+import com.kyawzinlinn.smssender.ui.reply.AutoRepliedMessagesViewModel
+import com.kyawzinlinn.smssender.ui.SharedUiViewModel
 import com.kyawzinlinn.smssender.utils.ScreenTitles
 import com.kyawzinlinn.smssender.utils.SmsUtils
 
@@ -66,14 +67,14 @@ enum class ReplyNavigationType {
 
 @Composable
 fun ReplyAddMessageScreen(
-    homeViewModel: HomeViewModel,
+    sharedUiViewModel: SharedUiViewModel,
     navigateUp: () -> Unit,
     navigationType: ReplyNavigationType,
     phoneNumber: String = "",
     modifier: Modifier = Modifier
 ) {
-    homeViewModel.updateFloatingActionButtonStatus(false)
-    homeViewModel.updateTopBarUi(
+    sharedUiViewModel.updateFloatingActionButtonStatus(false)
+    sharedUiViewModel.updateTopBarUi(
         title = when (navigationType) {
             ReplyNavigationType.Add -> ScreenTitles.ADD_REPLY_MESSAGE.title
             ReplyNavigationType.Update -> ScreenTitles.UPDATE_REPLY_MESSAGE.title
@@ -97,17 +98,17 @@ fun ReplyAddMessageContent(
     navigationType: ReplyNavigationType,
     navigateUp: () -> Unit,
     modifier: Modifier = Modifier,
-    repliedMessageViewModel: RepliedMessageViewModel = viewModel(factory = AppViewModelProvider.Factory)
+    autoRepliedMessagesViewModel: AutoRepliedMessagesViewModel = viewModel(factory = AppViewModelProvider.Factory)
 ) {
 
     var phoneNumber by rememberSaveable { mutableStateOf(phoneNumber) }
     var isPhoneNumberValid by rememberSaveable { mutableStateOf(true) }
     var allNumberEnabled by remember { mutableStateOf(navigationType == ReplyNavigationType.AllNumber) }
-    val uiState by repliedMessageViewModel.uiState.collectAsState()
+    val uiState by autoRepliedMessagesViewModel.uiState.collectAsState()
     val repliedMessages by uiState.repliedMessagesByPhoneNumber.collectAsState(emptyList())
 
     LaunchedEffect(Unit) {
-        if (navigationType != ReplyNavigationType.Add) repliedMessageViewModel.getPhoneNumbersByPhoneNumber(
+        if (navigationType != ReplyNavigationType.Add) autoRepliedMessagesViewModel.getPhoneNumbersByPhoneNumber(
             phoneNumber
         )
     }
@@ -165,7 +166,7 @@ fun ReplyAddMessageContent(
                 isPhoneNumberValid = phoneNumber.trim().isNotEmpty()
 
                 if (isPhoneNumberValid || allNumberEnabled) {
-                    repliedMessageViewModel.addRepliedMessages(
+                    autoRepliedMessagesViewModel.addRepliedMessages(
                         SmsUtils.formatPhoneNumber(phoneNumber),
                         replies.replaceAllPhoneNumbersAndEnabledAllNumbers(
                             phoneNumber,

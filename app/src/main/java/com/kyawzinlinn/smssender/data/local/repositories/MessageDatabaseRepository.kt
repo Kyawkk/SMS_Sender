@@ -1,6 +1,6 @@
 package com.kyawzinlinn.smssender.data.local.repositories
 
-import com.kyawzinlinn.smssender.domain.model.MessageDto
+import com.kyawzinlinn.smssender.data.model.MessageDto
 import kotlinx.coroutines.flow.Flow
 
 interface MessageDatabaseRepository {

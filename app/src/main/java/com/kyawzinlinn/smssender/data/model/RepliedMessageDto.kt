@@ -1,4 +1,4 @@
-package com.kyawzinlinn.smssender.domain.model
+package com.kyawzinlinn.smssender.data.model
 
 import androidx.room.ColumnInfo
 import androidx.room.Entity

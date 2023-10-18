@@ -9,7 +9,7 @@ import androidx.work.ExistingWorkPolicy
 import androidx.work.OneTimeWorkRequestBuilder
 import androidx.work.PeriodicWorkRequest
 import androidx.work.WorkManager
-import com.kyawzinlinn.smssender.data.local.repositories.SmsRepository
+import com.kyawzinlinn.smssender.data.local.repositories.ScheduledMessageWorkerRepository
 import com.kyawzinlinn.smssender.domain.model.Message
 import com.kyawzinlinn.smssender.utils.KEY_IS_TIME_OVER
 import com.kyawzinlinn.smssender.utils.KEY_MESSAGE
@@ -20,7 +20,7 @@ import java.time.LocalDateTime
 import java.time.ZoneOffset
 import java.util.concurrent.TimeUnit
 
-class WorkerSmsRepository(private val context: Context) : SmsRepository {
+class ScheduledMessageWorkerRepositoryImpl(context: Context) : ScheduledMessageWorkerRepository {
     val workManager = WorkManager.getInstance(context)
 
     @RequiresApi(Build.VERSION_CODES.O)

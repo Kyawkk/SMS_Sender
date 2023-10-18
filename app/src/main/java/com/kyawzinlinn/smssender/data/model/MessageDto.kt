@@ -1,8 +1,9 @@
-package com.kyawzinlinn.smssender.domain.model
+package com.kyawzinlinn.smssender.data.model
 
 import androidx.room.ColumnInfo
 import androidx.room.Entity
 import androidx.room.PrimaryKey
+import com.kyawzinlinn.smssender.domain.model.Message
 import java.io.Serializable
 
 @Entity("messages")
