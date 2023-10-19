@@ -1,6 +1,8 @@
 package com.kyawzinlinn.smssender.utils
 
+import android.content.Context
 import android.os.Build
+import android.widget.Toast
 import androidx.annotation.RequiresApi
 import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.TimePickerState
@@ -44,4 +46,8 @@ fun String.toMessageObject(): MessageDto {
     return if (messageDTO.delayTime.trim()
             .isNullOrEmpty()
     ) messageDTO.copy(delayTime = "Date,Time") else messageDTO
+}
+
+fun Context.showToast(message: String){
+    Toast.makeText(this,message,Toast.LENGTH_SHORT).show()
 }

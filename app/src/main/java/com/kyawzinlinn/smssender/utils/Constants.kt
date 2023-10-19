@@ -13,6 +13,7 @@ const val REQUEST_CODE = 342
 const val NOTIFICATION_ID = 92
 
 enum class ScreenTitles (val title: String){
+    REQUEST_PERMISSION("Allow Permission"),
     HOME("Home"),
     ADD("Add Message"),
     UPDATE("Update Message"),

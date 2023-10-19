@@ -9,6 +9,7 @@
 
 package com.kyawzinlinn.smssender.ui
 
+import androidx.activity.OnBackPressedCallback
 import androidx.compose.animation.AnimatedContent
 import androidx.compose.animation.AnimatedVisibility
 import androidx.compose.animation.ExperimentalAnimationApi
@@ -39,17 +40,25 @@ import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.NavigationBar
 import androidx.compose.material3.NavigationBarItem
 import androidx.compose.material3.Scaffold
+import androidx.compose.material3.SnackbarDuration
+import androidx.compose.material3.SnackbarHost
+import androidx.compose.material3.SnackbarHostState
+import androidx.compose.material3.SnackbarResult
 import androidx.compose.material3.Text
 import androidx.compose.material3.TopAppBarDefaults
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.DisposableEffect
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
+import androidx.compose.runtime.remember
+import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.vector.ImageVector
+import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextAlign
 import androidx.lifecycle.viewmodel.compose.viewModel
@@ -58,65 +67,116 @@ import androidx.navigation.compose.currentBackStackEntryAsState
 import androidx.navigation.compose.rememberNavController
 import com.google.accompanist.permissions.ExperimentalPermissionsApi
 import com.kyawzinlinn.smssender.AppViewModelProvider
+import com.kyawzinlinn.smssender.MainActivity
 import com.kyawzinlinn.smssender.data.model.MessageDto
 import com.kyawzinlinn.smssender.ui.add.AddMessageScreenDestination
+import com.kyawzinlinn.smssender.ui.add.ReplyAddMessageScreenDestination
+import com.kyawzinlinn.smssender.ui.add.ReplyNavigationType
 import com.kyawzinlinn.smssender.ui.add.SmsNavigationType
+import com.kyawzinlinn.smssender.ui.components.EnableAutoStartSettingDialog
 import com.kyawzinlinn.smssender.ui.home.HomeScreenDestination
 import com.kyawzinlinn.smssender.ui.navigation.SmsNavHost
 import com.kyawzinlinn.smssender.ui.reply.MessageReplyScreenDestination
-import com.kyawzinlinn.smssender.ui.add.ReplyAddMessageScreenDestination
-import com.kyawzinlinn.smssender.ui.add.ReplyNavigationType
-import com.kyawzinlinn.smssender.ui.components.EnableAutoStartSettingDialog
 import com.kyawzinlinn.smssender.ui.theme.productSansFontFamily
 import com.kyawzinlinn.smssender.utils.ScreenTitles
+import com.kyawzinlinn.smssender.utils.SmsUtils
+import kotlinx.coroutines.launch
 
 @Composable
 fun SmsApp(
     sharedUiViewModel: SharedUiViewModel = viewModel(factory = AppViewModelProvider.Factory),
+    settingsPreferencesViewModel: SettingsPreferencesViewModel = viewModel(factory = AppViewModelProvider.Factory),
     navController: NavHostController = rememberNavController()
 ) {
     val uiState by sharedUiViewModel.uiState.collectAsState()
+    val snackbarHostState = remember { SnackbarHostState() }
+    val context = LocalContext.current
+    val coroutineScope = rememberCoroutineScope()
     var showFloatingActionButton by rememberSaveable { mutableStateOf(false) }
     var showNavigateIcon by rememberSaveable { mutableStateOf(false) }
     var showBottomAppBar by rememberSaveable { mutableStateOf(false) }
     var title by rememberSaveable { mutableStateOf(HomeScreenDestination.title) }
     var currentRoute = navController.currentDestination?.route
-    var showAutoStartSettingConfirmationDialog by rememberSaveable { mutableStateOf(true) }
+    val showAutoStartSettingConfirmationDialog by settingsPreferencesViewModel.isShowingDialogAgain.collectAsState()
+    val allPermissionsGranted = uiState.allPermissionGranted
+    val navBackStackEntry by navController.currentBackStackEntryAsState()
 
-    LaunchedEffect(uiState.showFloatingActionButton, uiState.showNavigationIcon, uiState.title, uiState.showBottomAppBar) {
+    DisposableEffect(Unit) {
+        val activity = context as MainActivity
+        val backCallback = object : OnBackPressedCallback(true) {
+            override fun handleOnBackPressed() {
+                if (navBackStackEntry?.destination?.route == HomeScreenDestination.route) {
+                    activity.finish()
+                } else {
+                    navController.popBackStack()
+                }
+            }
+        }
+
+        activity.onBackPressedDispatcher.addCallback(backCallback)
+
+        onDispose {
+            backCallback.remove()
+        }
+    }
+
+    LaunchedEffect(uiState.showRationaleMessage) {
+        if (uiState.showRationaleMessage.isNotEmpty()) {
+            coroutineScope.launch {
+                val result = snackbarHostState.showSnackbar(
+                        message = uiState.showRationaleMessage,
+                        actionLabel = "Enable",
+                        duration = SnackbarDuration.Short
+                    )
+                when (result) {
+                    SnackbarResult.ActionPerformed -> {
+                        SmsUtils.openAutoStartSettings(context)
+                    }
+
+                    SnackbarResult.Dismissed -> {
+
+                    }
+                }
+            }
+
+        }
+    }
+
+    LaunchedEffect(
+        uiState.showFloatingActionButton,
+        uiState.showNavigationIcon,
+        uiState.title,
+        uiState.showBottomAppBar
+    ) {
         showFloatingActionButton = uiState.showFloatingActionButton
         showNavigateIcon = uiState.showNavigationIcon
         showBottomAppBar = uiState.showBottomAppBar
         title = uiState.title
     }
 
-    Scaffold(topBar = {
+    Scaffold(snackbarHost = { SnackbarHost(snackbarHostState) }, topBar = {
         SmsAppTopBar(
             title = title, showNavigateIcon = showNavigateIcon, navigateUp = uiState.navigateUp
         )
     }, floatingActionButton = {
-        SmsFloatingActionButton(
-            showFloatingActionButton && showBottomAppBar,
+        SmsFloatingActionButton(showFloatingActionButton && showBottomAppBar,
             navigateToAddScreen = { type, messageDto ->
-                when(currentRoute) {
-                    HomeScreenDestination.route -> navController.navigate(AddMessageScreenDestination.route + "/$type/$messageDto")
+                when (currentRoute) {
+                    HomeScreenDestination.route -> navController.navigate(
+                        AddMessageScreenDestination.route + "/$type/$messageDto"
+                    )
+
                     MessageReplyScreenDestination.route -> navController.navigate(
                         ReplyAddMessageScreenDestination.route + "/ /${ReplyNavigationType.Add}"
                     )
                 }
             })
     }, bottomBar = {
-        AnimatedVisibility(
-            visible = showBottomAppBar,
-            enter = fadeIn() + slideInVertically(
-                animationSpec = tween(200),
-                initialOffsetY = {100}
-            ),
-            exit = fadeOut() + slideOutVertically(
-                animationSpec = tween(200),
-                targetOffsetY = {100}
-            )
-        ) {
+        AnimatedVisibility(visible = showBottomAppBar,
+            enter = fadeIn() + slideInVertically(animationSpec = tween(200),
+                initialOffsetY = { 100 }),
+            exit = fadeOut() + slideOutVertically(animationSpec = tween(200),
+                targetOffsetY = { 100 })) {
             SmsAppBottomNavigation(navController = navController,
                 onNavigationItemSelected = { screen ->
                     when (screen) {
@@ -131,9 +191,13 @@ fun SmsApp(
                 })
         }
     }) {
-        if (showAutoStartSettingConfirmationDialog) {
-            EnableAutoStartSettingDialog(onDismissRequest = {})
+
+        if (showAutoStartSettingConfirmationDialog && allPermissionsGranted) {
+            EnableAutoStartSettingDialog(onDismissRequest = {}, onEnableClick = {
+                settingsPreferencesViewModel.updateShowingDialogAgainStatus(it)
+            })
         }
+
         SmsNavHost(
             sharedUiViewModel = sharedUiViewModel,
             navController = navController,
@@ -148,16 +212,14 @@ enum class NavigateIconType {
 
 @Composable
 fun SmsFloatingActionButton(
-    visible: Boolean,
-    navigateToAddScreen: (SmsNavigationType, MessageDto) -> Unit
+    visible: Boolean, navigateToAddScreen: (SmsNavigationType, MessageDto) -> Unit
 ) {
     AnimatedVisibility(
         visible = visible,
         enter = scaleIn(animationSpec = tween(300), initialScale = 0.8f) + fadeIn(),
         exit = scaleOut(animationSpec = tween(300), targetScale = 0.8f) + fadeOut()
     ) {
-        FloatingActionButton(
-            onClick = {
+        FloatingActionButton(onClick = {
             navigateToAddScreen(
                 SmsNavigationType.ADD, MessageDto(0, "", "", "", false, false)
             )
@@ -176,7 +238,8 @@ fun SmsAppTopBar(
 ) {
     CenterAlignedTopAppBar(title = {
         AnimatedContent(targetState = title, transitionSpec = {
-            fadeIn() + slideInVertically(animationSpec = tween(400),
+            fadeIn() + slideInVertically(
+                animationSpec = tween(400),
                 initialOffsetY = { it }) togetherWith fadeOut(
                 animationSpec = tween(
                     200
@@ -198,21 +261,16 @@ fun SmsAppTopBar(
         titleContentColor = MaterialTheme.colorScheme.onPrimary
     ), navigationIcon = {
         IconButton(
-            onClick = navigateUp,
-            enabled = showNavigateIcon
+            onClick = navigateUp, enabled = showNavigateIcon
         ) {
             AnimatedVisibility(
-                visible = showNavigateIcon,
-                enter = fadeIn(),
-                exit = fadeOut()
-            ){
+                visible = showNavigateIcon, enter = fadeIn(), exit = fadeOut()
+            ) {
                 Icon(
                     imageVector = when (navigateIconType) {
                         NavigateIconType.NAVIGATE_BACK -> Icons.Default.ArrowBack
                         NavigateIconType.ADD_SCREEN -> Icons.Default.Clear
-                    },
-                    contentDescription = "",
-                    tint = MaterialTheme.colorScheme.onPrimary
+                    }, contentDescription = "", tint = MaterialTheme.colorScheme.onPrimary
                 )
             }
         }

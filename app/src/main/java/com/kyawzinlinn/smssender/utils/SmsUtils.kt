@@ -18,19 +18,30 @@ object SmsUtils {
         smsManager.sendTextMessage(phone,null,message,null,null)
     }
 
+    /**
+     * Formats a phone number to match the Myanmar phone number format.
+     * Myanmar phone numbers typically have the format "09-XXXX-XXXXX" or "959-XXX-XXXXXX"
+     * @param phoneNumber The input number to be formatted
+     * @return The formatted phone number
+     * */
     fun formatPhoneNumber(phoneNumber: String): String {
-        return if (phoneNumber.startsWith("959") || phoneNumber.startsWith("+959")) phoneNumber.replace(Regex("[+]?959"),"09") else phoneNumber
+        val pattern = "(^09|^959)".toRegex()
+        val result = phoneNumber.replace(pattern){
+            if (it.value.startsWith("09")) {
+                "+959${it.value.substring(2)}"
+            } else {
+                "+959${it.value.substring(3)}"
+            }
+        }
+        return result
     }
 
+
     fun openAutoStartSettings(context: Context) {
-        try {
-            val intent = Intent()
-            intent.action = Settings.ACTION_REQUEST_IGNORE_BATTERY_OPTIMIZATIONS
-            intent.data = Uri.parse("package:${context.packageName}")
-            context.startActivity(intent)
-        } catch (e: Exception) {
-            e.printStackTrace()
-            // Handle any exceptions that might occur when trying to open the settings.
-        }
+        val packageName = context.packageName
+        val intent = Intent(Settings.ACTION_APPLICATION_DETAILS_SETTINGS)
+        val uri = Uri.fromParts("package", packageName, null)
+        intent.data = uri
+        context.startActivity(intent)
     }
 }

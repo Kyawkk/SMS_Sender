@@ -56,6 +56,7 @@ import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.text.input.ImeAction
 import androidx.compose.ui.text.input.KeyboardType
@@ -64,6 +65,7 @@ import androidx.compose.ui.window.Dialog
 import androidx.compose.ui.window.DialogProperties
 import androidx.lifecycle.viewmodel.compose.viewModel
 import androidx.wear.compose.material.Checkbox
+import androidx.wear.compose.material.CheckboxDefaults
 import com.kyawzinlinn.smssender.AppViewModelProvider
 import com.kyawzinlinn.smssender.R
 import com.kyawzinlinn.smssender.data.model.MessageDto
@@ -74,6 +76,8 @@ import com.kyawzinlinn.smssender.ui.home.ScheduledMessagesViewModel
 import com.kyawzinlinn.smssender.ui.SharedUiViewModel
 import com.kyawzinlinn.smssender.utils.DateValidationUtils
 import com.kyawzinlinn.smssender.utils.ScreenTitles
+import com.kyawzinlinn.smssender.utils.SmsUtils
+import com.kyawzinlinn.smssender.utils.showToast
 import com.kyawzinlinn.smssender.utils.toFormattedTime
 import java.text.SimpleDateFormat
 import java.util.Date
@@ -100,6 +104,8 @@ fun AddMessageScreen(
     messageToUpdate: MessageDto = MessageDto(0, "", "", "Date,Time", false, false),
     navigateUp: () -> Unit
 ) {
+    val context = LocalContext.current
+
     sharedUiViewModel.updateTopBarUi(
         title = when (smsNavigationType) {
             SmsNavigationType.ADD -> ScreenTitles.ADD.title
@@ -128,6 +134,7 @@ fun AddMessageScreen(
                     SmsNavigationType.ADD -> {
                         scheduledMessagesViewModel.sendMessage(it.toMessage())
                         scheduledMessagesViewModel.addMessage(it)
+                        context.showToast("Added message successfully!")
                         navigateUp()
                     }
 
@@ -137,6 +144,7 @@ fun AddMessageScreen(
                                 messageToUpdate = it.copy(id = messageToUpdate.id),
                                 oldMessage = messageToUpdate
                             )
+                            context.showToast("Updated message successfully!")
                         }
                         navigateUp()
                     }
@@ -226,7 +234,13 @@ fun MessageInputLayout(
                 isEveryday = !isEveryday
             }
         ) {
-            Checkbox(checked = isEveryday)
+            Checkbox(
+                checked = isEveryday,
+                colors = CheckboxDefaults.colors(
+                    uncheckedBoxColor = MaterialTheme.colorScheme.primary,
+                    checkedBoxColor = MaterialTheme.colorScheme.primary
+                )
+            )
             Spacer(Modifier.width(8.dp))
             Text(text = "Everyday")
         }
@@ -261,7 +275,7 @@ fun MessageInputLayout(
                     onAddMessageBtnClick(
                         MessageDto(
                             0,
-                            phoneNumber,
+                            SmsUtils.formatPhoneNumber(phoneNumber),
                             message,
                             "$selectedDate,$selectedTime",
                             isEveryday,
@@ -272,29 +286,6 @@ fun MessageInputLayout(
             }, modifier = Modifier.fillMaxWidth()
         ) {
             Text(text = buttonTitle)
-        }
-    }
-}
-
-@Composable
-fun PhoneNumberOptionDropdown(
-    isExpanded: Boolean = false,
-    phoneNumbers: List<String> = emptyList<String>(),
-    onPhoneNumberClick: (String) -> Unit,
-    modifier: Modifier = Modifier
-        .fillMaxWidth()
-        .padding(horizontal = 16.dp)
-) {
-    DropdownMenu(
-        expanded = isExpanded,
-        modifier = modifier,
-        onDismissRequest = {}
-    ) {
-        phoneNumbers.forEach {
-            DropdownMenuItem(
-                text = { Text(it) },
-                onClick = { onPhoneNumberClick(it) }
-            )
         }
     }
 }

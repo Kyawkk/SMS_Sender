@@ -69,7 +69,7 @@ dependencies {
     implementation ("com.google.code.gson:gson:2.10.1")
     implementation ("androidx.compose.material:material-icons-extended")
     implementation ("androidx.compose.material:material:1.5.3")
-
+    implementation("androidx.datastore:datastore-preferences:1.0.0")
 
     // To use Kotlin annotation processing tool (kapt)
     kapt("androidx.room:room-compiler:$room_version")

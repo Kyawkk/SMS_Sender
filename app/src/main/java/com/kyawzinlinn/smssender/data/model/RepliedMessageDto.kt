@@ -3,6 +3,7 @@ package com.kyawzinlinn.smssender.data.model
 import androidx.room.ColumnInfo
 import androidx.room.Entity
 import androidx.room.PrimaryKey
+import com.kyawzinlinn.smssender.utils.SmsUtils
 
 @Entity("replied_messages")
 data class RepliedMessageDto(
@@ -16,7 +17,7 @@ data class RepliedMessageDto(
 
 fun List<RepliedMessageDto>.replaceAllPhoneNumbersAndEnabledAllNumbers(phoneNumber: String, allNumberEnabled: Boolean): List<RepliedMessageDto> {
     return map {
-        it.copy(phoneNumber = phoneNumber, isAllNumbers = allNumberEnabled)
+        it.copy(phoneNumber = SmsUtils.formatPhoneNumber(phoneNumber), isAllNumbers = allNumberEnabled)
     }
 }
 

@@ -1,7 +1,10 @@
 package com.kyawzinlinn.smssender.ui.navigation
 
+import android.util.Log
 import androidx.activity.compose.BackHandler
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.collectAsState
+import androidx.compose.runtime.getValue
 import androidx.compose.ui.Modifier
 import androidx.navigation.NavHostController
 import androidx.navigation.compose.NavHost
@@ -17,6 +20,8 @@ import com.kyawzinlinn.smssender.ui.add.ReplyAddMessageScreen
 import com.kyawzinlinn.smssender.ui.add.ReplyAddMessageScreenDestination
 import com.kyawzinlinn.smssender.ui.add.ReplyNavigationType
 import com.kyawzinlinn.smssender.ui.SharedUiViewModel
+import com.kyawzinlinn.smssender.ui.permission.PermissionRequestScreenDestination
+import com.kyawzinlinn.smssender.ui.permission.PermissionsRequestScreen
 import com.kyawzinlinn.smssender.utils.Transition
 import com.kyawzinlinn.smssender.utils.toMessageObject
 
@@ -26,18 +31,29 @@ fun SmsNavHost(
     sharedUiViewModel: SharedUiViewModel,
     modifier: Modifier = Modifier
 ) {
-    BackHandler(
+    val sharedUiState by sharedUiViewModel.uiState.collectAsState()
+    val allPermissionGranted = sharedUiState.allPermissionGranted
+
+    /*BackHandler(
         enabled = navController.currentBackStackEntry?.destination?.route == HomeScreenDestination.route,
         onBack = {
+            Log.d("TAG", "onbackstack: ${navController.currentBackStackEntry?.destination?.route}")
             navController.popBackStack()
         }
-    )
+    )*/
 
     NavHost(
         navController = navController,
-        startDestination = HomeScreenDestination.route,
+        startDestination = if (allPermissionGranted) HomeScreenDestination.route else PermissionRequestScreenDestination.route,
         modifier = modifier
     ) {
+        composable(
+            route = PermissionRequestScreenDestination.route
+        ) {
+            PermissionsRequestScreen(
+                sharedUiViewModel = sharedUiViewModel
+            )
+        }
 
         composable(
             route = HomeScreenDestination.route
@@ -46,6 +62,13 @@ fun SmsNavHost(
                 updateFloatingActionButtonStatus(true)
                 updateBottomAppBarStatus(true)
             }
+
+            BackHandler (
+                enabled = true,
+                onBack = {
+                    navController.popBackStack()
+                }
+            )
 
             HomeScreen(
                 sharedUiViewModel = sharedUiViewModel,

@@ -8,6 +8,7 @@ import androidx.compose.animation.fadeIn
 import androidx.compose.animation.fadeOut
 import androidx.compose.animation.slideInVertically
 import androidx.compose.animation.slideOutVertically
+import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
@@ -42,7 +43,6 @@ import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextAlign
-import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.window.DialogProperties
 import androidx.wear.compose.material.Checkbox
@@ -128,9 +128,10 @@ fun NoMessagesLayout(
 @Composable
 fun EnableAutoStartSettingDialog(
     modifier: Modifier = Modifier,
+    onEnableClick: (Boolean) -> Unit,
     onDismissRequest: () -> Unit,
 ) {
-    var dontShowAgain by rememberSaveable { mutableStateOf(false) }
+    var showingDialogAgain by rememberSaveable { mutableStateOf(false) }
     val context = LocalContext.current
 
     AlertDialog(
@@ -146,22 +147,28 @@ fun EnableAutoStartSettingDialog(
                     text = stringResource(R.string.enable_auto_start_setting)
                 )
                 Spacer(Modifier.height(16.dp))
-                Row {
+                Row (
+                    modifier = Modifier.clickable { showingDialogAgain = !showingDialogAgain }
+                ) {
                     Checkbox(
-                        checked = dontShowAgain,
-                        colors = CheckboxDefaults.colors(uncheckedBoxColor = MaterialTheme.colorScheme.primary),
+                        checked = showingDialogAgain,
+                        colors = CheckboxDefaults.colors(
+                            uncheckedBoxColor = MaterialTheme.colorScheme.primary,
+                            checkedBoxColor = MaterialTheme.colorScheme.primary
+                        ),
                         onCheckedChange = {
-                            dontShowAgain = it
+                            showingDialogAgain = it
                         }
                     )
                     Spacer(Modifier.width(8.dp))
-                    Text("Don't show this message again")
+                    Text("Don't show this dialog again")
                 }
             }
         },
         confirmButton = {
             TextButton(
                 onClick = {
+                    onEnableClick(!showingDialogAgain)
                     SmsUtils.openAutoStartSettings(context)
                 }
             ) {
@@ -169,13 +176,5 @@ fun EnableAutoStartSettingDialog(
             }
         },
         modifier = modifier
-    )
-}
-
-@Composable
-@Preview(showBackground = true)
-fun EnableAutoStartSettingDialogPreview() {
-    EnableAutoStartSettingDialog(
-        onDismissRequest = {}
     )
 }

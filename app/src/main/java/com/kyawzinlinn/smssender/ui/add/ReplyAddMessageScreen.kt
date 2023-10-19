@@ -1,5 +1,6 @@
 package com.kyawzinlinn.smssender.ui.add
 
+import android.widget.Toast
 import androidx.compose.animation.AnimatedVisibility
 import androidx.compose.animation.animateContentSize
 import androidx.compose.animation.core.Spring
@@ -23,6 +24,7 @@ import androidx.compose.material.icons.filled.AddBox
 import androidx.compose.material.icons.filled.Delete
 import androidx.compose.material.icons.filled.Edit
 import androidx.compose.material3.AlertDialog
+import androidx.compose.material3.ButtonDefaults
 import androidx.compose.material3.Checkbox
 import androidx.compose.material3.FilledTonalButton
 import androidx.compose.material3.Icon
@@ -38,23 +40,24 @@ import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.text.input.ImeAction
 import androidx.compose.ui.text.input.KeyboardType
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import androidx.lifecycle.viewmodel.compose.viewModel
-import androidx.wear.compose.material.Text
 import com.kyawzinlinn.smssender.AppViewModelProvider
 import com.kyawzinlinn.smssender.R
 import com.kyawzinlinn.smssender.data.model.RepliedMessageDto
 import com.kyawzinlinn.smssender.data.model.replaceAllPhoneNumbersAndEnabledAllNumbers
+import com.kyawzinlinn.smssender.ui.SharedUiViewModel
 import com.kyawzinlinn.smssender.ui.components.SmsInputField
 import com.kyawzinlinn.smssender.ui.navigation.NavigationDestination
 import com.kyawzinlinn.smssender.ui.reply.AutoRepliedMessagesViewModel
-import com.kyawzinlinn.smssender.ui.SharedUiViewModel
 import com.kyawzinlinn.smssender.utils.ScreenTitles
 import com.kyawzinlinn.smssender.utils.SmsUtils
+import com.kyawzinlinn.smssender.utils.showToast
 
 object ReplyAddMessageScreenDestination : NavigationDestination {
     override val route: String = "Reply Add Messages"
@@ -105,6 +108,7 @@ fun ReplyAddMessageContent(
     var isPhoneNumberValid by rememberSaveable { mutableStateOf(true) }
     var allNumberEnabled by remember { mutableStateOf(navigationType == ReplyNavigationType.AllNumber) }
     val uiState by autoRepliedMessagesViewModel.uiState.collectAsState()
+    val context = LocalContext.current
     val repliedMessages by uiState.repliedMessagesByPhoneNumber.collectAsState(emptyList())
 
     LaunchedEffect(Unit) {
@@ -148,36 +152,38 @@ fun ReplyAddMessageContent(
             horizontalArrangement = Arrangement.Start,
             verticalAlignment = Alignment.CenterVertically
         ) {
-            Checkbox(
-                checked = allNumberEnabled,
-                onCheckedChange = {
-                    phoneNumber = ""
-                    allNumberEnabled = it
-                }
-            )
+            Checkbox(checked = allNumberEnabled, onCheckedChange = {
+                phoneNumber = ""
+                allNumberEnabled = it
+            })
             Spacer(modifier = Modifier.width(12.dp))
-            Text("All numbers")
+            androidx.compose.material3.Text("All numbers")
         }
 
-        RepliedFieldList(
-            buttonTitle = if (navigationType != ReplyNavigationType.Add) "Update" else "Add",
+        RepliedFieldList(buttonTitle = if (navigationType != ReplyNavigationType.Add) "Update" else "Add",
             repliedMessages = repliedMessages,
             onAddButtonClick = { replies ->
                 isPhoneNumberValid = phoneNumber.trim().isNotEmpty()
 
                 if (isPhoneNumberValid || allNumberEnabled) {
+
                     autoRepliedMessagesViewModel.addRepliedMessages(
                         SmsUtils.formatPhoneNumber(phoneNumber),
                         replies.replaceAllPhoneNumbersAndEnabledAllNumbers(
-                            phoneNumber,
-                            allNumberEnabled
+                            phoneNumber, allNumberEnabled
                         )
+                    )
+
+                    context.showToast(
+                        message = when (navigationType) {
+                            ReplyNavigationType.Add -> "Added data successfully!"
+                            else -> "Updated data successfully!"
+                        }
                     )
 
                     navigateUp()
                 }
-            }
-        )
+            })
     }
 }
 
@@ -206,8 +212,7 @@ fun RepliedFieldList(
         messages = messages.mapIndexed { index, message ->
             if (index == indexToUpdate) {
                 message.copy(
-                    incomingMessage = keyword,
-                    repliedMessage = reply
+                    incomingMessage = keyword, repliedMessage = reply
                 ) // Update the message
             } else {
                 message
@@ -216,14 +221,12 @@ fun RepliedFieldList(
     }
 
     Column(
-        modifier = modifier.fillMaxWidth(),
-        verticalArrangement = Arrangement.spacedBy(12.dp)
+        modifier = modifier.fillMaxWidth(), verticalArrangement = Arrangement.spacedBy(12.dp)
     ) {
         Row(
-            modifier = Modifier.fillMaxWidth(),
-            verticalAlignment = Alignment.CenterVertically
+            modifier = Modifier.fillMaxWidth(), verticalAlignment = Alignment.CenterVertically
         ) {
-            Text(
+            androidx.compose.material3.Text(
                 text = "Reply Field", style = MaterialTheme.typography.titleMedium
             )
             Spacer(Modifier.weight(1f))
@@ -238,8 +241,7 @@ fun RepliedFieldList(
         }
 
         if (showDialog) {
-            AddRepliedMessageDialog(
-                initialKeyword = initialKeyword,
+            AddRepliedMessageDialog(initialKeyword = initialKeyword,
                 initialReply = initialReply,
                 indexToUpdate = selectedIndex,
                 onDismissRequest = {
@@ -248,8 +250,7 @@ fun RepliedFieldList(
                 onReplyAdded = { indexToUpdate, keyword, reply, isUpdateMode ->
                     if (isUpdateMode) updateMessage(indexToUpdate, keyword, reply)
                     else messages = messages + RepliedMessageDto(0, "", keyword, reply, false)
-                }
-            )
+                })
         }
 
         // if reply field is not empty, show keyword  ->  reply title layout
@@ -265,27 +266,23 @@ fun RepliedFieldList(
             )
         ) {
             messages.forEachIndexed { index, repliedMessageDto ->
-                RepliedMessageListItem(
-                    repliedMessageDto = repliedMessageDto,
-                    onDeleteClick = {
-                        removeMessage(repliedMessageDto)
-                    },
-                    onEditClick = {
-                        initialReply = repliedMessageDto.repliedMessage
-                        initialKeyword = repliedMessageDto.incomingMessage
-                        selectedIndex = index
-                        showDialog = true
-                    }
-                )
+                RepliedMessageListItem(repliedMessageDto = repliedMessageDto, onDeleteClick = {
+                    removeMessage(repliedMessageDto)
+                }, onEditClick = {
+                    initialReply = repliedMessageDto.repliedMessage
+                    initialKeyword = repliedMessageDto.incomingMessage
+                    selectedIndex = index
+                    showDialog = true
+                })
             }
         }
 
-        FilledTonalButton(
-            modifier = Modifier.fillMaxWidth(),
-            onClick = {
-                onAddButtonClick(messages)
-            }) {
-            Text(buttonTitle)
+        FilledTonalButton(modifier = Modifier.fillMaxWidth(), colors = ButtonDefaults.buttonColors(
+            containerColor = MaterialTheme.colorScheme.primary
+        ), onClick = {
+            onAddButtonClick(messages)
+        }) {
+            androidx.compose.material3.Text(buttonTitle)
         }
     }
 }
@@ -297,15 +294,13 @@ fun ReplyFieldTitleLayout(
     Row(
         modifier = modifier.fillMaxWidth()
     ) {
-        Text(
-            text = "Keyword",
-            modifier = Modifier
+        androidx.compose.material3.Text(
+            text = "Keyword", modifier = Modifier
                 .weight(0.4f)
                 .padding(start = 8.dp)
         )
-        Text(
-            text = "Reply",
-            modifier = Modifier
+        androidx.compose.material3.Text(
+            text = "Reply", modifier = Modifier
                 .weight(0.4f)
                 .padding(start = 8.dp)
         )
@@ -328,70 +323,56 @@ fun AddRepliedMessageDialog(
     var reply by rememberSaveable { mutableStateOf(initialReply) }
     var isReplyValid by rememberSaveable { mutableStateOf(true) }
 
-    AlertDialog(
-        onDismissRequest = onDismissRequest,
-        modifier = modifier,
-        icon = {
-            Icon(
-                imageVector = Icons.Default.AddBox,
-                contentDescription = null
-            )
-        },
-        title = {
-            Text(
-                "Add reply field",
-                modifier = Modifier.fillMaxWidth(),
-                style = MaterialTheme.typography.headlineSmall,
-                textAlign = TextAlign.Center
-            )
-        },
-        confirmButton = {
-            TextButton(onClick = {
-                isKeywordValid = keyword.isNotEmpty()
-                isReplyValid = reply.isNotEmpty()
-                if (isKeywordValid && isReplyValid) {
-                    onReplyAdded(
-                        indexToUpdate,
-                        keyword,
-                        reply,
-                        (initialReply.isNotEmpty() && initialKeyword.isNotEmpty())
-                    )
-                    onDismissRequest()
-                }
-            }) {
-                Text("Done")
-            }
-        },
-        text = {
-            Column(
-                modifier = modifier,
-                verticalArrangement = Arrangement.spacedBy(12.dp)
-            ) {
-
-                SmsInputField(
-                    value = keyword,
-                    label = "Keyword",
-                    errorMessage = "Keyword must not be empty!",
-                    onValueChange = {
-                        keyword = it
-                    },
-                    placeholderId = R.string.keyword,
-                    isValid = isKeywordValid
+    AlertDialog(onDismissRequest = onDismissRequest, modifier = modifier, icon = {
+        Icon(
+            imageVector = Icons.Default.AddBox, contentDescription = null
+        )
+    }, title = {
+        androidx.compose.material3.Text(
+            "Add reply field",
+            modifier = Modifier.fillMaxWidth(),
+            style = MaterialTheme.typography.headlineSmall,
+            textAlign = TextAlign.Center
+        )
+    }, confirmButton = {
+        TextButton(onClick = {
+            isKeywordValid = keyword.isNotEmpty()
+            isReplyValid = reply.isNotEmpty()
+            if (isKeywordValid && isReplyValid) {
+                onReplyAdded(
+                    indexToUpdate,
+                    keyword,
+                    reply,
+                    (initialReply.isNotEmpty() && initialKeyword.isNotEmpty())
                 )
-
-                SmsInputField(
-                    value = reply,
-                    errorMessage = "Reply must not be empty!",
-                    onValueChange = {
-                        reply = it
-                    },
-                    placeholderId = R.string.reply,
-                    label = "Reply",
-                    isValid = isReplyValid
-                )
+                onDismissRequest()
             }
+        }) {
+            androidx.compose.material3.Text("Done")
         }
-    )
+    }, text = {
+        Column(
+            modifier = modifier, verticalArrangement = Arrangement.spacedBy(12.dp)
+        ) {
+
+            SmsInputField(
+                value = keyword,
+                label = "Keyword",
+                errorMessage = "Keyword must not be empty!",
+                onValueChange = {
+                    keyword = it
+                },
+                placeholderId = R.string.keyword,
+                isValid = isKeywordValid
+            )
+
+            SmsInputField(
+                value = reply, errorMessage = "Reply must not be empty!", onValueChange = {
+                    reply = it
+                }, placeholderId = R.string.reply, label = "Reply", isValid = isReplyValid
+            )
+        }
+    })
 }
 
 @Composable
@@ -402,14 +383,13 @@ fun RepliedMessageListItem(
     repliedMessageDto: RepliedMessageDto = RepliedMessageDto(0, "09123456789", "Hello", "Ok", false)
 ) {
     androidx.compose.material3.Card(
-        modifier = modifier.fillMaxWidth(),
-        shape = MaterialTheme.shapes.small
+        modifier = modifier.fillMaxWidth(), shape = MaterialTheme.shapes.small
     ) {
         Row(
             modifier = Modifier.padding(horizontal = 8.dp),
             verticalAlignment = Alignment.CenterVertically
         ) {
-            Text(
+            androidx.compose.material3.Text(
                 text = repliedMessageDto.incomingMessage,
                 modifier = Modifier
                     .weight(0.4f)
@@ -417,7 +397,7 @@ fun RepliedMessageListItem(
                 maxLines = 1,
                 overflow = TextOverflow.Ellipsis
             )
-            Text(
+            androidx.compose.material3.Text(
                 text = repliedMessageDto.repliedMessage,
                 modifier = Modifier
                     .weight(0.4f)
@@ -425,20 +405,14 @@ fun RepliedMessageListItem(
                 maxLines = 1,
                 overflow = TextOverflow.Ellipsis
             )
-            IconButton(
-                modifier = Modifier.weight(0.1f),
-                onClick = {
-                    onEditClick(repliedMessageDto)
-                }
-            ) {
+            IconButton(modifier = Modifier.weight(0.1f), onClick = {
+                onEditClick(repliedMessageDto)
+            }) {
                 Icon(imageVector = Icons.Default.Edit, contentDescription = null)
             }
-            IconButton(
-                modifier = Modifier.weight(0.1f),
-                onClick = {
-                    onDeleteClick(repliedMessageDto)
-                }
-            ) {
+            IconButton(modifier = Modifier.weight(0.1f), onClick = {
+                onDeleteClick(repliedMessageDto)
+            }) {
                 Icon(imageVector = Icons.Default.Delete, contentDescription = null)
             }
         }

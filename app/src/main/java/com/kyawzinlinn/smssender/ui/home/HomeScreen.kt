@@ -9,20 +9,12 @@
 
 package com.kyawzinlinn.smssender.ui.home
 
-import android.Manifest
-import android.content.Intent
-import android.net.Uri
-import android.provider.Settings
-import androidx.compose.animation.AnimatedVisibility
 import androidx.compose.animation.animateContentSize
 import androidx.compose.animation.core.Spring
 import androidx.compose.animation.core.spring
-import androidx.compose.animation.fadeIn
-import androidx.compose.animation.fadeOut
 import androidx.compose.foundation.ExperimentalFoundationApi
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
-import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.foundation.layout.Row
@@ -45,9 +37,6 @@ import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
 import androidx.compose.material3.MaterialTheme
-import androidx.compose.material3.SnackbarDuration
-import androidx.compose.material3.SnackbarHostState
-import androidx.compose.material3.SnackbarResult
 import androidx.compose.material3.Switch
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
@@ -56,8 +45,6 @@ import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
-import androidx.compose.runtime.rememberCoroutineScope
-import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
@@ -67,8 +54,6 @@ import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import androidx.lifecycle.viewmodel.compose.viewModel
 import com.google.accompanist.permissions.ExperimentalPermissionsApi
-import com.google.accompanist.permissions.isGranted
-import com.google.accompanist.permissions.rememberPermissionState
 import com.kyawzinlinn.smssender.AppViewModelProvider
 import com.kyawzinlinn.smssender.R
 import com.kyawzinlinn.smssender.data.model.MessageDto
@@ -76,9 +61,8 @@ import com.kyawzinlinn.smssender.ui.SharedUiViewModel
 import com.kyawzinlinn.smssender.ui.add.SmsNavigationType
 import com.kyawzinlinn.smssender.ui.components.NoMessagesLayout
 import com.kyawzinlinn.smssender.ui.navigation.NavigationDestination
+import com.kyawzinlinn.smssender.utils.PermissionsUtils
 import com.kyawzinlinn.smssender.utils.ScreenTitles
-import com.kyawzinlinn.smssender.utils.Transition
-import kotlinx.coroutines.launch
 
 object HomeScreenDestination : NavigationDestination {
     override val route: String = "Home"
@@ -93,22 +77,14 @@ fun HomeScreen(
     modifier: Modifier = Modifier
 ) {
     val context = LocalContext.current
+    sharedUiViewModel.updatePermissionStatus(PermissionsUtils.isAllPermissionGranted(context))
+
     val uiState by scheduledMessagesViewModel.uiState.collectAsState()
     val messages by uiState.messages.collectAsState(initial = emptyList())
-    val scope = rememberCoroutineScope()
-    val snackbarHostState = remember { SnackbarHostState() }
     var showEmptyScreen by remember { mutableStateOf(false) }
 
-    val smsPermissionState =
-        rememberPermissionState(permission = Manifest.permission.SEND_SMS, onPermissionResult = {})
-    val readSmsPermissionState =
-        rememberPermissionState(permission = Manifest.permission.READ_SMS, onPermissionResult = {})
-    val notificationPermissionState =
-        rememberPermissionState(permission = Manifest.permission.POST_NOTIFICATIONS,
-            onPermissionResult = {})
-
-    val allPermissionGranted =
-        smsPermissionState.status.isGranted && notificationPermissionState.status.isGranted && readSmsPermissionState.status.isGranted
+    val sharedUiState by sharedUiViewModel.uiState.collectAsState()
+    val allPermissionGranted = sharedUiState.allPermissionGranted
 
     sharedUiViewModel.updateTopBarUi(HomeScreenDestination.title, false)
     sharedUiViewModel.updateBottomAppBarStatus(allPermissionGranted)
@@ -123,17 +99,11 @@ fun HomeScreen(
             .animateContentSize()
     ) {
 
-        AnimatedVisibility(showEmptyScreen) {
+        if (showEmptyScreen) {
             NoMessagesLayout(
                 titleId = R.string.no_messages, descriptionId = R.string.no_messages_desc
             )
-        }
-
-        AnimatedVisibility(
-            visible = !showEmptyScreen,
-            enter = fadeIn(),
-            exit = fadeOut()
-        ) {
+        } else {
             MessageContentList(messages = messages, onMessageItemClicked = {
 
             }, toggleSmsSenderWork = { isActive, message ->
@@ -143,44 +113,6 @@ fun HomeScreen(
             }, onUpdateItemClick = {
                 navigateToAddScreen(SmsNavigationType.UPDATE, it)
             })
-        }
-
-        AnimatedVisibility(
-            !allPermissionGranted,
-            enter = Transition.enter,
-            exit = Transition.exit
-        ) {
-            Box(
-                modifier = Modifier.fillMaxSize(), contentAlignment = Alignment.Center
-            ) {
-                PermissionsRequestScreen(smsPermissionState = smsPermissionState,
-                    notificationPermissionState = notificationPermissionState,
-                    readSmsPermissionState = readSmsPermissionState,
-                    onShouldShowRationale = {
-                        scope.launch {
-                            val result = snackbarHostState.showSnackbar(
-                                message = it,
-                                actionLabel = "Open Settings",
-                                duration = SnackbarDuration.Indefinite
-                            )
-                            when (result) {
-                                SnackbarResult.ActionPerformed -> {
-                                    val intent =
-                                        Intent(Settings.ACTION_APPLICATION_DETAILS_SETTINGS).apply {
-                                            data = Uri.fromParts(
-                                                "package", context.packageName, null
-                                            )
-                                        }
-                                    context.startActivity(intent)
-                                }
-
-                                SnackbarResult.Dismissed -> {
-
-                                }
-                            }
-                        }
-                    })
-            }
         }
     }
 }

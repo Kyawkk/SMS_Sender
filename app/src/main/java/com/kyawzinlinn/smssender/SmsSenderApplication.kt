@@ -34,7 +34,7 @@ class SmsSenderApplication : Application () {
     }
 
     private suspend fun sendAutoReply(incomingMessage: IncomingMessage) {
-        Log.d("TAG", "sendAutoReply: ${incomingMessage.phoneNumber}")
+        Log.d("TAG", "sendAutoReply: ${incomingMessage}")
         container.autoRepliedMessagesRepository.getRepliedMessagesByPhoneNumber(incomingMessage.phoneNumber).collect { messages ->
             Log.d("TAG", "sendAutoReply: $messages")
             messages.forEach {
